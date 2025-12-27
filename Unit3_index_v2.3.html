@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Unit 3 – Interactive Mini Platform (v2.3)</title>
+<style>
+:root{--bg:#fbfaff;--text:#1f1b2d;--brand:#7c3aed;--accent:#22c55e;}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f1b2d}
+header{background:linear-gradient(90deg,#7c3aed,#a78bfa);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;color:#ffffff}
+header .author{margin-left:auto;font-weight:700;color:#e9d5ff}
+.container{padding:12px}
+.lesson-tabs,.sub-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.lesson-tab,.sub-tab{padding:10px 12px;border-radius:12px;background:#fff;border:2px solid var(--brand);cursor:pointer;font-weight:800;color:#2d1b4a;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.lesson-tab.active{background:#7c3aed;color:#ffffff}
+.sub-tab.active{background:var(--lesson);color:#2d1b4a}
+.panel{background:#fff;border-radius:14px;border:2px solid #e2e8f0;padding:12px;min-height:260px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:2px solid #ede9fe;border-radius:12px;padding:12px;background:#fbfaff}
+.card h4{margin:0 0 8px;font-size:18px;color:#3e2a6f}
+.chip{display:inline-block;background:#f5f3ff;color:#3e2a6f;border:1px solid #e9d5ff;border-radius:14px;padding:2px 8px;margin-right:6px;font-size:12px}
+button{border:none;border-radius:10px;padding:10px 14px;font-weight:800;background:var(--accent);color:#0b3f1f;cursor:pointer}
+button.ghost{background:#fff;border:2px solid var(--accent);color:#0b3f1f}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input{border:2px solid #d9d6fe;border-radius:10px;padding:10px;font-size:16px;width:100%}
+.hidden{display:none}
+.success{background:#ecfdf5;border:2px solid #a7f3d0}
+.score{font-weight:800;color:#3e2a6f}
+.drag-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drag-list{display:grid;grid-template-columns:1fr;gap:10px}
+.drag-item{background:#f5f3ff;border:2px dashed #e9d5ff;border-radius:10px;padding:10px;min-height:56px}
+.drag-item[draggable='true']{cursor:grab}
+.dropzone{background:#fffbe6;border:2px dashed #ffd27f;min-height:56px}
+.ok{background:#e8f5e9;border-color:#a5d6a7}
+.bad{background:#ffebee;border-color:#ffcdd2}
+.mcq{border:2px dashed #d9d6fe;border-radius:10px;padding:10px}
+.mcq .opt{border:2px solid #e9d5ff;border-radius:10px;padding:10px;margin:6px 0;cursor:pointer}
+.mcq .opt.correct{background:#e6ffed;border-color:#b3f5c0}
+.mcq .opt.wrong{background:#ffebee;border-color:#ffcdd2}
+.note{background:#fff7e6;border:2px solid #ffe0a3;border-radius:12px;padding:10px}
+footer{padding:14px;text-align:center;color:#567}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Unit 3 – Sustainable Development Goals (SDGs)</h1>
+  <div class='author'>Created by <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='lesson-tabs' id='topTabs'>
+    <div class='lesson-tab active' data-lesson='1'>Lesson 1</div>
+    <div class='lesson-tab' data-lesson='2'>Lesson 2</div>
+    <div class='lesson-tab' data-lesson='3'>Lesson 3</div>
+    <div class='lesson-tab' data-lesson='4'>Lesson 4</div>
+    <div class='lesson-tab' id='unitExamTab'>Unit Exam</div>
+  </div>
+  <div id='subTabs' class='sub-tabs'></div>
+  <div id='content' class='panel'></div>
+  <div id='unitExam' class='panel hidden'></div>
+</div>
+<footer>Offline · British voice (en‑GB) · Matching & Kahoot · Grammar in Lesson 3 (Retry) · Unit Exam only</footer>
+<script>
+const speech = { rateWord:0.95, rateSentence:0.85, voice:null,
+  init(){ const vs = window.speechSynthesis.getVoices(); this.voice = vs.find(v=>/en-GB|UK|British/i.test(v.name))||vs[0]||null; },
+  say(t, r=1){ const u=new SpeechSynthesisUtterance(t); u.rate=r; u.lang='en-GB'; if(this.voice) u.voice=this.voice; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+};
+window.speechSynthesis.onvoiceschanged=()=>speech.init();
+function shuffle(a){return a.map(x=>({x,r:Math.random()})).sort((p,q)=>p.r-q.r).map(o=>o.x)}
+function el(h){const d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild}
+
+const lessons = {"1": {"title": "SDGs – Part 1", "color": "#d9d3fa", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "sustainable", "ar": "مستدام", "ex": "We need sustainable development for future generations."}, {"en": "fair", "ar": "عادل", "ex": "Policies should be fair and balanced."}, {"en": "pillars", "ar": "ركائز/أعمدة رئيسية", "ex": "The plan rests on three pillars."}, {"en": "comprehensive", "ar": "شامل", "ex": "It is a comprehensive national roadmap."}, {"en": "affordable", "ar": "ميسور التكلفة", "ex": "Healthcare must be affordable for all."}, {"en": "initiative", "ar": "مبادرة", "ex": "The ministry launched a health initiative."}, {"en": "equitable", "ar": "منصف/متكافئ", "ex": "Equitable access reduces inequality."}, {"en": "coverage", "ar": "تغطية", "ex": "Vaccination coverage has increased."}, {"en": "screening", "ar": "فحص/تحرّي مبكر", "ex": "Screening programs detect diseases early."}, {"en": "inclusive", "ar": "شامل للجميع", "ex": "Inclusive growth benefits everyone."}], "reading": ["Sustainable Development Strategy is a long-term plan that focuses on improving people's lives in a fair and balanced way.", "Egypt Vision 2030 focuses on three main pillars: the economy, society, and the environment.", "The strategy aims to build prosperity through economic growth and social fairness.", "The plan depends on the participation of civil society and government agencies.", "Inclusive development means everyone should benefit equally.", "Resources should be used wisely to guarantee a better future for the next generation."], "games": {"pairs": [["sustainable", "مستدام"], ["fair", "عادل"], ["pillars", "ركائز/أعمدة رئيسية"], ["comprehensive", "شامل"], ["affordable", "ميسور التكلفة"], ["initiative", "مبادرة"], ["equitable", "منصف/متكافئ"], ["coverage", "تغطية"], ["screening", "فحص/تحرّي مبكر"], ["inclusive", "شامل للجميع"]]}}, "2": {"title": "SDGs – Part 2", "color": "#cbbaf7", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "infrastructure", "ar": "بنية تحتية", "ex": "Strong infrastructure supports prosperity."}, {"en": "justice", "ar": "عدالة", "ex": "Social justice is a core value."}, {"en": "participation", "ar": "مشاركة", "ex": "Public participation improves the plan."}, {"en": "wisely", "ar": "بحكمة", "ex": "We should use resources wisely."}, {"en": "sustainable", "ar": "مستدام", "ex": "We need sustainable development for future generations."}, {"en": "sustainable", "ar": "مستدام", "ex": "We need sustainable development for future generations."}, {"en": "fair", "ar": "عادل", "ex": "Policies should be fair and balanced."}, {"en": "pillars", "ar": "ركائز/أعمدة رئيسية", "ex": "The plan rests on three pillars."}, {"en": "comprehensive", "ar": "شامل", "ex": "It is a comprehensive national roadmap."}, {"en": "affordable", "ar": "ميسور التكلفة", "ex": "Healthcare must be affordable for all."}], "reading": ["Inclusive development means everyone should benefit equally.", "Resources should be used wisely to guarantee a better future for the next generation.", "Universal Health Insurance supports equitable access to healthcare.", "Vaccination coverage has reached millions of people across Egypt.", "Early screening programs help detect chronic diseases before they spread.", "Strong infrastructure improves quality of life and supports growth."], "games": {"pairs": [["infrastructure", "بنية تحتية"], ["justice", "عدالة"], ["participation", "مشاركة"], ["wisely", "بحكمة"], ["sustainable", "مستدام"], ["sustainable", "مستدام"], ["fair", "عادل"], ["pillars", "ركائز/أعمدة رئيسية"], ["comprehensive", "شامل"], ["affordable", "ميسور التكلفة"]]}}, "3": {"title": "Listening & Grammar", "color": "#bca1f4", "tabs": ["1_Vocabulary", "2_Games", "3_Reading", "Grammar"], "vocab": [{"en": "initiative", "ar": "مبادرة", "ex": "The ministry launched a health initiative."}, {"en": "equitable", "ar": "منصف/متكافئ", "ex": "Equitable access reduces inequality."}, {"en": "coverage", "ar": "تغطية", "ex": "Vaccination coverage has increased."}, {"en": "screening", "ar": "فحص/تحرّي مبكر", "ex": "Screening programs detect diseases early."}, {"en": "inclusive", "ar": "شامل للجميع", "ex": "Inclusive growth benefits everyone."}, {"en": "infrastructure", "ar": "بنية تحتية", "ex": "Strong infrastructure supports prosperity."}, {"en": "justice", "ar": "عدالة", "ex": "Social justice is a core value."}, {"en": "participation", "ar": "مشاركة", "ex": "Public participation improves the plan."}, {"en": "wisely", "ar": "بحكمة", "ex": "We should use resources wisely."}, {"en": "sustainable", "ar": "مستدام", "ex": "We need sustainable development for future generations."}], "reading": ["Adjectives describe nouns: Education is a cornerstone goal.", "Adverbs modify actions: Students learn more effectively when they plan carefully.", "Fair policies support inclusive growth across regions.", "Strong infrastructure is wisely expanded to meet rising needs.", "Equitable access is carefully designed to be sustainable.", "Participation is widely encouraged in schools and communities."], "grammar": {"explain": "<div><h4>Adjectives & Adverbs</h4><ul><li><strong>Adjectives</strong> describe nouns: <em>a careful student</em>.</li><li><strong>Adverbs</strong> modify verbs/adjectives: <em>writes carefully</em>.</li><li><strong>Form</strong>: adjective + ly → quickly, wisely.</li><li><strong>Exceptions</strong>: hard (adj/adv), fast (adj/adv), late (adj/adv).</li></ul></div>", "qs": [{"q": "She sings __________ at the school concert.", "opts": ["beautiful", "beautifully", "beauty", "beautify"], "ans": "beautifully"}, {"q": "He speaks English very __________.", "opts": ["fluent", "fluently", "fluency", "fluentness"], "ans": "fluently"}, {"q": "The soup tastes __________.", "opts": ["delicious", "deliciously", "delight", "delighted"], "ans": "delicious"}, {"q": "She answered the question in a __________ way.", "opts": ["logical", "logically", "logic", "logics"], "ans": "logical"}, {"q": "He ran __________ to catch the bus.", "opts": ["quick", "quickly", "quicker", "quickness"], "ans": "quickly"}, {"q": "The teacher explained the lesson __________.", "opts": ["clear", "clearly", "clarity", "clearness"], "ans": "clearly"}, {"q": "It was a __________ day, so we stayed inside.", "opts": ["rain", "rainy", "raining", "rained"], "ans": "rainy"}, {"q": "He plays the piano __________.", "opts": ["skillful", "skillfully", "skill", "skilled"], "ans": "skillfully"}, {"q": "The cat moved __________ through the room.", "opts": ["silent", "silently", "silence", "silencing"], "ans": "silently"}, {"q": "I felt very __________ when I saw my results.", "opts": ["happy", "happily", "happiness", "happier"], "ans": "happy"}, {"q": "She looked __________ at the broken vase.", "opts": ["sad", "sadly", "sadness", "sadden"], "ans": "sadly"}, {"q": "He worked __________ to finish the project on time.", "opts": ["hard", "hardly", "hardness", "harder"], "ans": "hard"}, {"q": "The new curriculum is __________ designed to improve thinking skills.", "opts": ["careful", "carefully", "care", "carefulness"], "ans": "carefully"}, {"q": "She speaks French __________.", "opts": ["fluent", "fluently", "fluency", "fluentness"], "ans": "fluently"}, {"q": "He is a __________ student. He always gets high grades.", "opts": ["successful", "successfully", "success", "succeed"], "ans": "successful"}]}, "games": {"pairs": [["initiative", "مبادرة"], ["equitable", "منصف/متكافئ"], ["coverage", "تغطية"], ["screening", "فحص/تحرّي مبكر"], ["inclusive", "شامل للجميع"], ["infrastructure", "بنية تحتية"], ["justice", "عدالة"], ["participation", "مشاركة"], ["wisely", "بحكمة"], ["sustainable", "مستدام"]]}}, "4": {"title": "SDGs – Part 3", "color": "#ad88f1", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "sustainable", "ar": "مستدام", "ex": "We need sustainable development for future generations."}, {"en": "fair", "ar": "عادل", "ex": "Policies should be fair and balanced."}, {"en": "pillars", "ar": "ركائز/أعمدة رئيسية", "ex": "The plan rests on three pillars."}, {"en": "comprehensive", "ar": "شامل", "ex": "It is a comprehensive national roadmap."}, {"en": "affordable", "ar": "ميسور التكلفة", "ex": "Healthcare must be affordable for all."}, {"en": "initiative", "ar": "مبادرة", "ex": "The ministry launched a health initiative."}, {"en": "equitable", "ar": "منصف/متكافئ", "ex": "Equitable access reduces inequality."}, {"en": "coverage", "ar": "تغطية", "ex": "Vaccination coverage has increased."}, {"en": "screening", "ar": "فحص/تحرّي مبكر", "ex": "Screening programs detect diseases early."}, {"en": "inclusive", "ar": "شامل للجميع", "ex": "Inclusive growth benefits everyone."}], "reading": ["The strategy is comprehensive and focuses on long-term prosperity.", "Initiatives are launched to boost vaccination coverage.", "Screening programs help society use resources wisely.", "Infrastructure projects are steadily improving services.", "Inclusive development ensures everyone benefits equally.", "Justice and fairness guide Egypt Vision 2030."], "games": {"pairs": [["sustainable", "مستدام"], ["fair", "عادل"], ["pillars", "ركائز/أعمدة رئيسية"], ["comprehensive", "شامل"], ["affordable", "ميسور التكلفة"], ["initiative", "مبادرة"], ["equitable", "منصف/متكافئ"], ["coverage", "تغطية"], ["screening", "فحص/تحرّي مبكر"], ["inclusive", "شامل للجميع"]]}}};
+const UNIT_EXAM = [{"type": "V", "q": "Egypt Vision 2030 is a long-term plan for __________ development.", "opts": ["temporary", "random", "sustainable", "limited"], "ans": "sustainable"}, {"type": "V", "q": "The strategy aims to improve people’s lives in a __________ and balanced way.", "opts": ["fair", "unfair", "secret", "sudden"], "ans": "fair"}, {"type": "V", "q": "Egypt Vision 2030 focuses on three main __________: economy, society, and environment.", "opts": ["pillars", "blocks", "columns", "steps"], "ans": "pillars"}, {"type": "V", "q": "The SDS is described as a __________ plan covering all aspects of development.", "opts": ["comprehensive", "partial", "limited", "narrow"], "ans": "comprehensive"}, {"type": "V", "q": "Healthcare services should be __________ for all citizens.", "opts": ["affordable", "costly", "rare", "exclusive"], "ans": "affordable"}, {"type": "V", "q": "The government launched a new health __________ to fight chronic diseases.", "opts": ["initiative", "ending", "delay", "closure"], "ans": "initiative"}, {"type": "V", "q": "The Universal Health Insurance System aims to provide __________ access to healthcare.", "opts": ["equitable", "biased", "restricted", "partial"], "ans": "equitable"}, {"type": "V", "q": "Vaccination __________ in Egypt has reached millions of people.", "opts": ["coverage", "distance", "gap", "shortage"], "ans": "coverage"}, {"type": "V", "q": "Early disease detection programs include regular health __________.", "opts": ["screening", "painting", "training", "shopping"], "ans": "screening"}, {"type": "V", "q": "The SDS promotes __________ development so everyone benefits equally.", "opts": ["inclusive", "exclusive", "isolated", "restricted"], "ans": "inclusive"}, {"type": "V", "q": "Hospitals and roads are part of a country’s __________.", "opts": ["infrastructure", "surface", "landscape", "furniture"], "ans": "infrastructure"}, {"type": "V", "q": "Egypt Vision 2030 aims to build prosperity through economic growth and social __________.", "opts": ["justice", "delay", "conflict", "division"], "ans": "justice"}, {"type": "V", "q": "The SDS depends on the __________ of civil society and government agencies.", "opts": ["participation", "ignorance", "absence", "avoidance"], "ans": "participation"}, {"type": "V", "q": "Balanced development means using resources __________.", "opts": ["wisely", "carelessly", "rarely", "slowly"], "ans": "wisely"}, {"type": "V", "q": "Egypt Vision 2030 is built on the principle of __________ development.", "opts": ["sustainable", "temporary", "random", "limited"], "ans": "sustainable"}, {"type": "G", "q": "She sings __________ at the school concert.", "opts": ["beautiful", "beautifully", "beauty", "beautify"], "ans": "beautifully"}, {"type": "G", "q": "He speaks English very __________.", "opts": ["fluent", "fluently", "fluency", "fluentness"], "ans": "fluently"}, {"type": "G", "q": "The soup tastes __________.", "opts": ["delicious", "deliciously", "delight", "delighted"], "ans": "delicious"}, {"type": "G", "q": "She answered the question in a __________ way.", "opts": ["logical", "logically", "logic", "logics"], "ans": "logical"}, {"type": "G", "q": "He ran __________ to catch the bus.", "opts": ["quick", "quickly", "quicker", "quickness"], "ans": "quickly"}, {"type": "G", "q": "The teacher explained the lesson __________.", "opts": ["clear", "clearly", "clarity", "clearness"], "ans": "clearly"}, {"type": "G", "q": "It was a __________ day, so we stayed inside.", "opts": ["rain", "rainy", "raining", "rained"], "ans": "rainy"}, {"type": "G", "q": "He plays the piano __________.", "opts": ["skillful", "skillfully", "skill", "skilled"], "ans": "skillfully"}, {"type": "G", "q": "The cat moved __________ through the room.", "opts": ["silent", "silently", "silence", "silencing"], "ans": "silently"}, {"type": "G", "q": "I felt very __________ when I saw my results.", "opts": ["happy", "happily", "happiness", "happier"], "ans": "happy"}, {"type": "G", "q": "She looked __________ at the broken vase.", "opts": ["sad", "sadly", "sadness", "sadden"], "ans": "sadly"}, {"type": "G", "q": "He worked __________ to finish the project on time.", "opts": ["hard", "hardly", "hardness", "harder"], "ans": "hard"}, {"type": "G", "q": "The new curriculum is __________ designed to improve thinking skills.", "opts": ["careful", "carefully", "care", "carefulness"], "ans": "carefully"}, {"type": "G", "q": "She speaks French __________.", "opts": ["fluent", "fluently", "fluency", "fluentness"], "ans": "fluently"}, {"type": "G", "q": "He is a __________ student. He always gets high grades.", "opts": ["successful", "successfully", "success", "succeed"], "ans": "successful"}];
+
+const subTabs=document.getElementById('subTabs');
+const content=document.getElementById('content');
+const unitExamPanel=document.getElementById('unitExam');
+let currentLesson=1;
+
+[...document.querySelectorAll('.lesson-tab')].forEach(tab=>{
+  if(tab.id==='unitExamTab') return;
+  tab.addEventListener('click',()=>{
+    [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    unitExamPanel.classList.add('hidden');
+    content.classList.remove('hidden');
+    currentLesson = parseInt(tab.dataset.lesson,10);
+    buildLessonTabs();
+  });
+});
+
+const unitExamTab=document.getElementById('unitExamTab');
+unitExamTab.addEventListener('click',()=>{
+  [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+  unitExamTab.classList.add('active');
+  content.classList.add('hidden');
+  subTabs.innerHTML='';
+  unitExamPanel.classList.remove('hidden');
+  buildUnitExam();
+});
+
+function buildLessonTabs(){
+  const L = lessons[currentLesson];
+  subTabs.innerHTML='';
+  document.documentElement.style.setProperty('--lesson', L.color);
+  (L.tabs||[]).forEach((name,i)=>{
+    const st=el(`<div class='sub-tab ${i===0?'active':''}' data-tab='${name}'>${name}</div>`);
+    st.addEventListener('click',()=>{
+      [...document.querySelectorAll('.sub-tab')].forEach(x=>x.classList.remove('active'));
+      st.classList.add('active');
+      renderSubTab(name);
+    });
+    subTabs.appendChild(st);
+  });
+  renderSubTab((L.tabs||[])[0]);
+}
+
+function renderSubTab(name){
+  const L = lessons[currentLesson];
+  if(name.startsWith('1_')) renderVocabulary(L);
+  else if(name.startsWith('2_')) renderGames(L);
+  else if(name.startsWith('3_')) renderReading(L);
+  else if(name==='Grammar') renderGrammar(L);
+}
+
+buildLessonTabs();
+
+function renderVocabulary(L){
+  const cards = (L.vocab||[]).map(v=>`<div class='card'>
+    <div class='chip'>${L.title}</div>
+    <h4>${v.en}</h4>
+    <p><strong>Arabic:</strong> ${v.ar}</p>
+    <p><em>Example:</em> ${v.ex}</p>
+    <div class='row'>
+      <button onclick="speech.say('${v.en}', speech.rateWord)">Play word (UK)</button>
+      <button class='ghost' onclick="speech.say('${v.ex}', speech.rateSentence)">Play example (slow)</button>
+    </div>
+  </div>`).join('');
+  const test = `<div class='card'>
+    <h4>Spelling Test – تسميع مكتوب (عربي ➜ إنجليزي)</h4>
+    <p>اكتب الكلمة الإنجليزية الصحيحة حسب المعنى العربي. أصوات تشجيع وحركات عند الإجابة الصحيحة.</p>
+    <div id='spellArea'></div>
+  </div>`;
+  content.innerHTML = `<div class='grid'>${cards}${test}</div>`;
+  startSpelling(L.vocab||[]);
+}
+
+function startSpelling(items){
+  const area=document.getElementById('spellArea'); let idx=0, score=0; items=shuffle(items);
+  function ask(){ const v=items[idx];
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${items.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      <input id='ans' class='input' placeholder='اكتب الكلمة بالإنجليزية' />
+      <div class='row' style='margin-top:8px'>
+        <button onclick='checkSpell()'>Submit</button>
+        <button class='ghost' onclick="speech.say('${v.en}', speech.rateWord)">Hear word</button>
+      </div>
+    </div>`;
+    window.checkSpell = ()=>{
+      const val=document.getElementById('ans').value.trim().toLowerCase();
+      if(val===(v.en||'').toLowerCase()){
+        score++; idx++; area.querySelector('.mcq').classList.add('success'); speech.say('Well done!',1);
+        setTimeout(()=>{ if(idx<items.length) ask(); else area.innerHTML=`<div class='success card'><h4>Great job!</h4><p>Your score: ${score}/${items.length}</p></div>`; }, 600);
+      }else{ speech.say('Try again',1); }
+    }
+  } ask();
+}
+
+function renderGames(L){
+  const pairs=(L.games&&L.games.pairs)||[]; const left=pairs.map(p=>p[0]); const right=pairs.map(p=>p[1]);
+  const html=`<div class='grid'>
+    <div class='card'>
+      <h4>Match the Cards – اسحب الكلمة إلى معناها</h4>
+      <div class='drag-wrap'>
+        <div><h4>English</h4><div class='drag-list' id='dragLeft'></div></div>
+        <div><h4>Arabic</h4><div class='drag-list' id='dragRight'></div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h4>Kahoot‑style: Choose the English from Arabic</h4>
+      <div id='kahoot'></div>
+    </div>
+  </div>`;
+  content.innerHTML=html; buildDragDrop(left,right); buildKahootWord(L);
+}
+
+function buildDragDrop(left,right){
+  const L1=shuffle(left), R1=shuffle(right);
+  const dl=document.getElementById('dragLeft');
+  const dr=document.getElementById('dragRight');
+  dl.innerHTML=L1.map(x=>`<div class='drag-item' draggable='true' data-word='${x}'>${x}</div>`).join('');
+  dr.innerHTML=R1.map(x=>`<div class='drag-item dropzone' data-mean='${x}'>${x}</div>`).join('');
+  const dItems=[...dl.querySelectorAll('.drag-item[draggable]')]; dItems.forEach(it=>{ it.addEventListener('dragstart',e=>{e.dataTransfer.setData('text',it.dataset.word)}); });
+  [...dr.querySelectorAll('.dropzone')].forEach(zone=>{
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('drop',e=>{
+      const w=e.dataTransfer.getData('text'); const mean=zone.dataset.mean;
+      const ok = Object.values(lessons).some(L=>L.games && L.games.pairs.some(p=>p[0]===w && p[1]===mean));
+      if(ok){ zone.classList.add('ok'); zone.innerHTML=`${mean} ✓ <span class='chip'>${w}</span>`; speech.say(w, speech.rateWord); }
+      else{ zone.classList.add('bad'); speech.say('Try again',1); }
+    });
+  });
+}
+
+function buildKahootWord(L){
+  const area=document.getElementById('kahoot'); let idx=0, score=0;
+  const bank = shuffle(L.vocab||[]).map(v=>({word:v.en, ar:v.ar}));
+  function ask(){ const item=bank[idx];
+    const distractors = shuffle((L.vocab||[]).filter(x=>x.en!==item.word)).slice(0,3).map(x=>x.en);
+    const options = shuffle([item.word, ...distractors]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${bank.length} · Score: ${score}</p>
+      <p><strong>Arabic meaning:</strong> ${item.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===item.word){ opt.classList.add('correct'); score++; speech.say('Excellent!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct: ' + item.word, 0.95);
+          const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===item.word); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<bank.length)?ask():area.innerHTML=`<div class='success card'><h4>Well done!</h4><p>Your score: ${score}/${bank.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderReading(L){
+  const s=L.reading||[];
+  content.innerHTML = `<div class='grid'>
+    ${s.map((t,i)=>`<div class='card'><h4>Sentence ${i+1}</h4><p>${t}</p><div class='row'><button class='ghost' onclick="speech.say('${t}', speech.rateSentence)">Play (UK, slow)</button></div></div>`).join('')}
+    <div class='card'><h4>Mini MCQ on Words</h4><div id='readMcq'></div></div>
+  </div>`;
+  buildReadMcq(L);
+}
+
+function buildReadMcq(L){
+  const area=document.getElementById('readMcq'); const sample = shuffle(L.vocab||[]).slice(6); let idx=0, score=0;
+  function ask(){ const v=sample[idx]; const options = shuffle([v.en, ...shuffle(L.vocab||[]).filter(x=>x.en!==v.en).slice(0,3).map(x=>x.en)]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${sample.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===v.en){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct is ' + v.en,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===v.en); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<sample.length)?ask():area.innerHTML=`<div class='success card'><h4>Nice!</h4><p>Your score: ${score}/${sample.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderGrammar(L){
+  content.innerHTML = `<div class='card'>${L.grammar.explain}</div><div id='gramControls' class='row'><button class='ghost' id='retryGram'>Retry Grammar</button></div><div id='gramQs'></div>`;
+  const area=document.getElementById('gramQs');
+  function start(){ let idx=0, score=0; const qs=shuffle(L.grammar.qs);
+    function ask(){ const Q=qs[idx]; if(!Q){ area.innerHTML=`<div class='success card'><h4>Grammar Practice Done</h4><p>Your score: ${score}/${qs.length}</p></div>`; return }
+      const options=shuffle([...Q.opts]);
+      area.innerHTML=`<div class='mcq'>
+        <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+        <p>${Q.q}</p>
+        ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      </div>`;
+      [...area.querySelectorAll('.opt')].forEach(opt=>{
+        opt.addEventListener('click',()=>{
+          const val=opt.dataset.val;
+          if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Well done!',1); }
+          else{ opt.classList.add('wrong'); speech.say('Correct is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+          setTimeout(()=>{ idx++; ask(); }, 800);
+        });
+      });
+    }
+    ask();
+    const btn=document.getElementById('retryGram'); if(btn) btn.onclick=()=>start();
+  }
+  start();
+}
+
+function buildUnitExam(){
+  const area=unitExamPanel; let idx=0, score=0; const qs=shuffle(UNIT_EXAM);
+  function ask(){ if(idx>=qs.length){ area.innerHTML=`<div class='success card'><h4>Unit Exam Completed</h4><p>Your score: ${score}/${qs.length}</p><div class='row'><button class='ghost' id='retryExam'>Retry Exam</button></div></div>`; document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); }; return }
+    const Q=qs[idx]; const options=shuffle([...Q.opts]);
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+      <p>${Q.q}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      <div class='row' style='margin-top:8px'><button class='ghost' id='retryExam'>Retry Exam</button></div>
+    </div>`;
+    document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); };
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct answer is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; ask(); }, 800);
+      });
+    });
+  }
+  ask();
+}
+
+content.classList.remove('hidden'); unitExamPanel.classList.add('hidden');
+</script>
+</body>
+</html>
