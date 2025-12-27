@@ -1,0 +1,98 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Mother Platform – 2nd Sec · First Term (v3.3 · Circular Tabs)</title>
+<style>
+:root{--bg:#f7f8fc;--ink:#0f172a;--ring:#e2e8f0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(90deg,#111827,#4f46e5);color:#fff}
+header h1{margin:0;font-size:20px}
+header .sub{font-size:12px;color:#c7d2fe}
+.container{padding:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;align-items:start}
+.circle{position:relative;width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.06);border:6px solid var(--ring);cursor:pointer;transition:transform .15s ease, box-shadow .15s ease,border-color .15s ease}
+.circle:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,0,0,.10)}
+.circle.active{box-shadow:0 0 0 6px rgba(79,70,229,.18), 0 8px 20px rgba(0,0,0,.12)}
+.circle.disabled{opacity:.45;cursor:not-allowed}
+.circle .emoji{font-size:34px;line-height:1;filter: drop-shadow(0 1px 0 rgba(0,0,0,.12))}
+.label{text-align:center;margin-top:8px;font-weight:800}
+.label small{display:block;font-weight:600;opacity:.8}
+.unit{display:flex;flex-direction:column;align-items:center;gap:6px}
+hr.sep{border:none;border-top:2px dashed #e2e8f0;margin:12px 0}
+.frame-wrap{border:2px solid #c7d2fe;border-radius:14px;overflow:hidden;background:#fff}
+iframe{width:100%;height:74vh;border:0;background:#fff}
+.note{margin:8px 0;color:#334155}
+footer{padding:12px;text-align:center;color:#334155}
+.alert{background:#fffbe6;border:2px dashed #ffd27f;color:#7a5c00;border-radius:12px;padding:8px;margin:8px 0}
+</style></head><body>
+<header>
+  <div>
+    <h1>2nd Sec · First Term — Mother Platform</h1>
+    <div class='sub'>Circular color-coded tabs · Offline · British voice inside each unit</div>
+  </div>
+  <div>By <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='grid' id='circles'>
+    
+    <div class='unit'>
+      <div class='circle disabled' role='button' aria-label='Unit 1' data-url='Unit1_index_placeholder.html' style='border-color:#2563eb'>
+        <div class='emoji'>✈️</div>
+      </div>
+      <div class='label' style='color:#2563eb'>Unit 1<small>Getting Away · missing</small></div>
+    </div>
+
+    <div class='unit'>
+      <div class='circle disabled' role='button' aria-label='Unit 2' data-url='Unit2_index_placeholder.html' style='border-color:#059669'>
+        <div class='emoji'>🌿</div>
+      </div>
+      <div class='label' style='color:#059669'>Unit 2<small>Go Green · missing</small></div>
+    </div>
+
+    <div class='unit'>
+      <div class='circle disabled' role='button' aria-label='Unit 3' data-url='Unit3_index_placeholder.html' style='border-color:#7c3aed'>
+        <div class='emoji'>🟣</div>
+      </div>
+      <div class='label' style='color:#7c3aed'>Unit 3<small>SDGs · missing</small></div>
+    </div>
+
+    <div class='unit'>
+      <div class='circle disabled' role='button' aria-label='Unit 4' data-url='Unit4_index_placeholder.html' style='border-color:#ec4899'>
+        <div class='emoji'>🌪️</div>
+      </div>
+      <div class='label' style='color:#ec4899'>Unit 4<small>Natural Disasters · missing</small></div>
+    </div>
+
+    <div class='unit'>
+      <div class='circle ' role='button' aria-label='Unit 5' data-url='Unit5_index.html' style='border-color:#10b981'>
+        <div class='emoji'>📰</div>
+      </div>
+      <div class='label' style='color:#10b981'>Unit 5<small>Media Manipulation</small></div>
+    </div>
+
+    <div class='unit'>
+      <div class='circle disabled' role='button' aria-label='Unit 6' data-url='Unit6_index_placeholder.html' style='border-color:#f59e0b'>
+        <div class='emoji'>🧠</div>
+      </div>
+      <div class='label' style='color:#f59e0b'>Unit 6<small>(to be added) · missing</small></div>
+    </div>
+  </div>
+  <hr class='sep'>
+  <div class='alert'>Available now: <strong>Unit 5</strong>.</div>
+  <div class='note'>Click a circle to open the unit below. Keep all UnitX_index.html files in the same folder for full offline experience.</div>
+  <div class='frame-wrap'><iframe id='frame' src='Unit1_index_placeholder.html' title='Units Frame'></iframe></div>
+</div>
+<footer>v3.3 · Circular tabs per unit color · Works offline · Randomized Exams inside each unit</footer>
+<script>
+const frame=document.getElementById('frame');
+const nodes=[...document.querySelectorAll('.circle')];
+nodes.forEach((n,i)=>{{
+  if(i===0 && !n.classList.contains('disabled')) n.classList.add('active');
+  n.addEventListener('click',()=>{{
+    if(n.classList.contains('disabled')) return;
+    nodes.forEach(x=>x.classList.remove('active'));
+    n.classList.add('active');
+    const url=n.dataset.url; frame.src=url;
+  }});
+}});
+</script>
+</body></html>
