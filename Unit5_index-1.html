@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Unit 5 – Interactive Mini Platform (v1.0 · Mint)</title>
+<style>
+:root{--bg:#f8fffb;--text:#1f1b2d;--brand:#10b981;--accent:#22c55e;}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f1b2d}
+header{background:linear-gradient(90deg,#10b981,#34d399);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;color:#fff;font-size:20px}
+header .author{margin-left:auto;color:#dcfce7;font-weight:700}
+.container{padding:12px}
+.lesson-tabs,.sub-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.lesson-tab,.sub-tab{padding:10px 12px;border-radius:12px;background:#fff;border:2px solid var(--brand);cursor:pointer;font-weight:800;color:#0f5132;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.lesson-tab.active{background:#10b981;color:#ffffff}
+.sub-tab.active{background:var(--lesson);color:#0f5132}
+.panel{background:#fff;border-radius:14px;border:2px solid #e2e8f0;padding:12px;min-height:260px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:2px solid #bbf7d0;border-radius:12px;padding:12px;background:#f8fffb}
+.card h4{margin:0 0 8px;font-size:18px;color:#0f5132}
+.chip{display:inline-block;background:#dcfce7;color:#0f5132;border:1px solid #bbf7d0;border-radius:14px;padding:2px 8px;margin-right:6px;font-size:12px}
+button{border:none;border-radius:10px;padding:10px 14px;font-weight:800;background:var(--accent);color:#0b3f1f;cursor:pointer}
+button.ghost{background:#fff;border:2px solid var(--accent);color:#0b3f1f}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input{border:2px solid #bbf7d0;border-radius:10px;padding:10px;font-size:16px;width:100%}
+.hidden{display:none}
+.success{background:#ecfdf5;border:2px solid #a7f3d0}
+.score{font-weight:800;color:#0f5132}
+.drag-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drag-list{display:grid;grid-template-columns:1fr;gap:10px}
+.drag-item{background:#e7fff2;border:2px dashed #bbf7d0;border-radius:10px;padding:10px;min-height:56px}
+.drag-item[draggable='true']{cursor:grab}
+.dropzone{background:#fffbe6;border:2px dashed #ffd27f;min-height:56px}
+.ok{background:#e8f5e9;border-color:#a5d6a7}
+.bad{background:#ffebee;border-color:#ffcdd2}
+.mcq{border:2px dashed #bbf7d0;border-radius:10px;padding:10px}
+.mcq .opt{border:2px solid #bbf7d0;border-radius:10px;padding:10px;margin:6px 0;cursor:pointer}
+.mcq .opt.correct{background:#e6ffed;border-color:#b3f5c0}
+.mcq .opt.wrong{background:#ffebee;border-color:#ffcdd2}
+.note{background:#fff7e6;border:2px solid #ffe0a3;border-radius:12px;padding:10px}
+footer{padding:14px;text-align:center;color:#0f5132}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Unit 5 – Media Manipulation</h1>
+  <div class='author'>Created by <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='lesson-tabs' id='topTabs'>
+    <div class='lesson-tab active' data-lesson='1'>Lesson 1</div>
+    <div class='lesson-tab' data-lesson='2'>Lesson 2</div>
+    <div class='lesson-tab' data-lesson='3'>Lesson 3</div>
+    <div class='lesson-tab' data-lesson='4'>Lesson 4</div>
+    <div class='lesson-tab' id='unitExamTab'>Unit Exam</div>
+  </div>
+  <div id='subTabs' class='sub-tabs'></div>
+  <div id='content' class='panel'></div>
+  <div id='unitExam' class='panel hidden'></div>
+</div>
+<footer>Offline · British voice (en‑GB) · Matching & Kahoot · Grammar in Lesson 3 (Tag Questions) · Unit Exam (English-only)</footer>
+<script>
+const speech = { rateWord:0.95, rateSentence:0.85, voice:null,
+  init(){ const vs = window.speechSynthesis.getVoices(); this.voice = vs.find(v=>/en-GB|UK|British/i.test(v.name))||vs[0]||null; },
+  say(t, r=1){ const u=new SpeechSynthesisUtterance(t); u.rate=r; u.lang='en-GB'; if(this.voice) u.voice=this.voice; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+};
+window.speechSynthesis.onvoiceschanged=()=>speech.init();
+function shuffle(a){return a.map(x=>({x:x,r:Math.random()})).sort((p,q)=>p.r-q.r).map(o=>o.x)}
+function el(h){const d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild}
+
+const LESSONS = {"1": {"title": "Media Manipulation – Part 1", "color": "#d1fae5", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "misinformation", "ar": "معلومات مضلِّلة", "ex": "Misinformation spreads quickly online."}, {"en": "distinguish", "ar": "يميز بين", "ex": "We must distinguish facts from opinions."}, {"en": "sensational", "ar": "إثاري/مُثير", "ex": "Sensational headlines grab attention."}, {"en": "trigger", "ar": "يحفّز/يؤدي إلى", "ex": "Emotional words can trigger shares."}, {"en": "misleading", "ar": "مُضلّل", "ex": "Misleading phrases hide the truth."}, {"en": "cite", "ar": "يقتبس/يذكر المصدر", "ex": "Good articles cite reliable sources."}, {"en": "misprints", "ar": "أخطاء مطبعية", "ex": "Editors should fix misprints early."}, {"en": "algorithms", "ar": "خوارزميات", "ex": "Algorithms shape what we see."}], "games": {"pairs": [["misinformation", "معلومات مضلِّلة"], ["distinguish", "يميز بين"], ["sensational", "إثاري/مُثير"], ["trigger", "يحفّز/يؤدي إلى"], ["misleading", "مُضلّل"], ["cite", "يقتبس/يذكر المصدر"], ["misprints", "أخطاء مطبعية"], ["algorithms", "خوارزميات"]]}, "reading": ["Misinformation spreads quickly through social media and group chats.", "Readers should distinguish between facts and opinions before sharing.", "Sensational headlines trigger emotions and fast reactions.", "Citing sources and verifying claims improve transparency.", "Algorithms can create echo chambers that limit diverse views.", "Regulation and platform restrictions aim to reduce harm."]}, "2": {"title": "Media Manipulation – Part 2", "color": "#a7f3d0", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "regulation", "ar": "لائحة/تنظيم حكومي", "ex": "Regulation protects users and rights."}, {"en": "restriction", "ar": "قيْد/حظر", "ex": "Some platforms add restriction to reduce harm."}, {"en": "verify", "ar": "يتحقق من", "ex": "Always verify information before posting."}, {"en": "transparency", "ar": "شفافية", "ex": "Transparency builds trust."}, {"en": "deception", "ar": "خداع", "ex": "Deception reduces public confidence."}, {"en": "removal", "ar": "إزالة المحتوى", "ex": "Removal policies handle harmful content."}, {"en": "tag question", "ar": "سؤال ذي ذيل (Tag Question)", "ex": "A tag question confirms information."}], "games": {"pairs": [["regulation", "لائحة/تنظيم حكومي"], ["restriction", "قيْد/حظر"], ["verify", "يتحقق من"], ["transparency", "شفافية"], ["deception", "خداع"], ["removal", "إزالة المحتوى"], ["tag question", "سؤال ذي ذيل (Tag Question)"]]}, "reading": ["Misprints and misleading phrases confuse audiences.", "Responsible editors verify data and update articles.", "Removal policies address harmful or false content.", "Clear captions and balanced headlines support fair reporting.", "Transparency helps rebuild trust after mistakes.", "Deception damages credibility and public debate."]}, "3": {"title": "Listening & Grammar", "color": "#6ee7b7", "tabs": ["1_Vocabulary", "2_Games", "3_Reading", "Grammar"], "vocab": [{"en": "cite", "ar": "يقتبس/يذكر المصدر", "ex": "Good articles cite reliable sources."}, {"en": "misprints", "ar": "أخطاء مطبعية", "ex": "Editors should fix misprints early."}, {"en": "algorithms", "ar": "خوارزميات", "ex": "Algorithms shape what we see."}, {"en": "regulation", "ar": "لائحة/تنظيم حكومي", "ex": "Regulation protects users and rights."}, {"en": "restriction", "ar": "قيْد/حظر", "ex": "Some platforms add restriction to reduce harm."}, {"en": "verify", "ar": "يتحقق من", "ex": "Always verify information before posting."}, {"en": "transparency", "ar": "شفافية", "ex": "Transparency builds trust."}, {"en": "deception", "ar": "خداع", "ex": "Deception reduces public confidence."}], "games": {"pairs": [["cite", "يقتبس/يذكر المصدر"], ["misprints", "أخطاء مطبعية"], ["algorithms", "خوارزميات"], ["regulation", "لائحة/تنظيم حكومي"], ["restriction", "قيْد/حظر"], ["verify", "يتحقق من"], ["transparency", "شفافية"], ["deception", "خداع"]]}, "reading": ["Listening explains how algorithms amplify sensational posts and reduce visibility of corrections.", "It shows that emotional triggers lead to quick sharing without verification.", "Editors recommend citing sources, adding labels, and updating misprints promptly.", "Platforms apply restrictions, removal, and regulation tools to slow misinformation.", "Users should distinguish reliable journalism from deceptive content by checking transparency.", "Key message: verify first, then share—use tag questions in speech to confirm understanding."], "grammar": {"explain": "<div><h4>Tag Questions</h4><ul><li>Positive clause → negative tag: <em>You checked the source, didn’t you?</em></li><li>Negative clause → positive tag: <em>They shouldn’t publish unverifiable claims, should they?</em></li><li>Be/Do/Have/modal in tag matches the clause: <em>He rarely checks, does he?</em></li><li>Intonation: rising for real questions; falling to seek confirmation.</li></ul></div>", "qs": [{"q": "Media outlets often choose which stories to show, __________?", "opts": ["don’t they", "do they", "isn’t it", "won’t they"], "ans": "don’t they"}, {"q": "A cropped photo can make someone look guilty, __________?", "opts": ["can’t it", "can it", "won’t it", "doesn’t it"], "ans": "can’t it"}, {"q": "Not all media is trying to trick us, __________?", "opts": ["is it", "isn’t it", "are they", "don’t they"], "ans": "is it"}, {"q": "You checked the source before sharing, __________?", "opts": ["didn’t you", "did you", "don’t you", "won’t you"], "ans": "didn’t you"}, {"q": "They shouldn’t publish unverifiable claims, __________?", "opts": ["should they", "shouldn’t they", "do they", "did they"], "ans": "should they"}, {"q": "The article was updated last night, __________?", "opts": ["wasn’t it", "was it", "didn’t it", "doesn’t it"], "ans": "wasn’t it"}, {"q": "People hardly read the corrections, __________?", "opts": ["do they", "don’t they", "are they", "is it"], "ans": "do they"}, {"q": "This headline is misleading, __________?", "opts": ["isn’t it", "is it", "doesn’t it", "won’t it"], "ans": "isn’t it"}, {"q": "They have verified the data, __________?", "opts": ["haven’t they", "have they", "didn’t they", "doesn’t they"], "ans": "haven’t they"}, {"q": "He rarely checks the original source, __________?", "opts": ["does he", "doesn’t he", "did he", "is he"], "ans": "does he"}, {"q": "Let’s add a warning label, __________?", "opts": ["shall we", "will we", "do we", "did we"], "ans": "shall we"}, {"q": "The platform can reduce distribution, __________?", "opts": ["can’t it", "can it", "isn’t it", "does it"], "ans": "can’t it"}, {"q": "Nobody wants fake news to spread, __________?", "opts": ["do they", "don’t they", "are they", "is it"], "ans": "do they"}, {"q": "There wasn’t any transparency in that case, __________?", "opts": ["was there", "wasn’t there", "is there", "isn’t there"], "ans": "was there"}, {"q": "You’ll check multiple sources next time, __________?", "opts": ["won’t you", "will you", "don’t you", "didn’t you"], "ans": "won’t you"}]}}, "4": {"title": "Media Manipulation – Part 3", "color": "#34d399", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "misinformation", "ar": "معلومات مضلِّلة", "ex": "Misinformation spreads quickly online."}, {"en": "distinguish", "ar": "يميز بين", "ex": "We must distinguish facts from opinions."}, {"en": "sensational", "ar": "إثاري/مُثير", "ex": "Sensational headlines grab attention."}, {"en": "trigger", "ar": "يحفّز/يؤدي إلى", "ex": "Emotional words can trigger shares."}, {"en": "misleading", "ar": "مُضلّل", "ex": "Misleading phrases hide the truth."}, {"en": "cite", "ar": "يقتبس/يذكر المصدر", "ex": "Good articles cite reliable sources."}, {"en": "misprints", "ar": "أخطاء مطبعية", "ex": "Editors should fix misprints early."}, {"en": "algorithms", "ar": "خوارزميات", "ex": "Algorithms shape what we see."}], "games": {"pairs": [["misinformation", "معلومات مضلِّلة"], ["distinguish", "يميز بين"], ["sensational", "إثاري/مُثير"], ["trigger", "يحفّز/يؤدي إلى"], ["misleading", "مُضلّل"], ["cite", "يقتبس/يذكر المصدر"], ["misprints", "أخطاء مطبعية"], ["algorithms", "خوارزميات"]]}, "reading": ["Balanced reporting presents multiple viewpoints with clear citations.", "Distinguishing facts from opinions prevents deception.", "Verification and transparency are essential for trust.", "Algorithms and regulations should be monitored for fairness.", "Restrictions and removal policies must be transparent.", "Tag questions in conversation help confirm what is meant."]}};
+const UNIT_EXAM = [{"type": "V", "q": "In today’s digital age, __________ spreads faster than wildfire.", "opts": ["misinformation", "education", "electricity", "agriculture"], "ans": "misinformation"}, {"type": "V", "q": "Readers should __________ between reliable sources and fake news.", "opts": ["distinguish", "destroy", "dislike", "disrupt"], "ans": "distinguish"}, {"type": "V", "q": "Headlines designed to provoke strong emotions are called __________.", "opts": ["sensational", "scientific", "neutral", "balanced"], "ans": "sensational"}, {"type": "V", "q": "Emotional language can __________ people to share articles quickly.", "opts": ["trigger", "block", "freeze", "hide"], "ans": "trigger"}, {"type": "V", "q": "Fake news often uses __________ phrases and hides the author.", "opts": ["misleading", "academic", "technical", "poetic"], "ans": "misleading"}, {"type": "V", "q": "Reliable journalism should __________ its sources and include multiple views.", "opts": ["cite", "skip", "delete", "guess"], "ans": "cite"}, {"type": "V", "q": "Errors in printed or written text are called __________.", "opts": ["misprints", "algorithms", "restrictions", "citations"], "ans": "misprints"}, {"type": "V", "q": "Social media __________ create echo chambers by showing similar content.", "opts": ["algorithms", "headlines", "authors", "printers"], "ans": "algorithms"}, {"type": "V", "q": "A government rule controlling how something is done is a __________.", "opts": ["regulation", "reaction", "relation", "reservation"], "ans": "regulation"}, {"type": "V", "q": "A __________ limits or controls what users can post or see.", "opts": ["restriction", "definition", "direction", "prediction"], "ans": "restriction"}, {"type": "V", "q": "Platforms should __________ information before publishing it.", "opts": ["verify", "simplify", "magnify", "justify"], "ans": "verify"}, {"type": "V", "q": "The quality of being open and honest is called __________.", "opts": ["transparency", "velocity", "efficiency", "frequency"], "ans": "transparency"}, {"type": "V", "q": "The act of tricking people into believing something false is __________.", "opts": ["deception", "reception", "exception", "perception"], "ans": "deception"}, {"type": "V", "q": "Taking content down from a platform is called __________.", "opts": ["removal", "arrival", "approval", "revival"], "ans": "removal"}, {"type": "V", "q": "A short phrase at the end of a statement that turns it into a question is a __________.", "opts": ["tag question", "thesis", "headline", "caption"], "ans": "tag question"}, {"type": "G", "q": "Media outlets often choose which stories to show, __________?", "opts": ["don’t they", "do they", "isn’t it", "won’t they"], "ans": "don’t they"}, {"type": "G", "q": "A cropped photo can make someone look guilty, __________?", "opts": ["can’t it", "can it", "won’t it", "doesn’t it"], "ans": "can’t it"}, {"type": "G", "q": "Not all media is trying to trick us, __________?", "opts": ["is it", "isn’t it", "are they", "don’t they"], "ans": "is it"}, {"type": "G", "q": "You checked the source before sharing, __________?", "opts": ["didn’t you", "did you", "don’t you", "won’t you"], "ans": "didn’t you"}, {"type": "G", "q": "They shouldn’t publish unverifiable claims, __________?", "opts": ["should they", "shouldn’t they", "do they", "did they"], "ans": "should they"}, {"type": "G", "q": "The article was updated last night, __________?", "opts": ["wasn’t it", "was it", "didn’t it", "doesn’t it"], "ans": "wasn’t it"}, {"type": "G", "q": "People hardly read the corrections, __________?", "opts": ["do they", "don’t they", "are they", "is it"], "ans": "do they"}, {"type": "G", "q": "This headline is misleading, __________?", "opts": ["isn’t it", "is it", "doesn’t it", "won’t it"], "ans": "isn’t it"}, {"type": "G", "q": "They have verified the data, __________?", "opts": ["haven’t they", "have they", "didn’t they", "doesn’t they"], "ans": "haven’t they"}, {"type": "G", "q": "He rarely checks the original source, __________?", "opts": ["does he", "doesn’t he", "did he", "is he"], "ans": "does he"}, {"type": "G", "q": "Let’s add a warning label, __________?", "opts": ["shall we", "will we", "do we", "did we"], "ans": "shall we"}, {"type": "G", "q": "The platform can reduce distribution, __________?", "opts": ["can’t it", "can it", "isn’t it", "does it"], "ans": "can’t it"}, {"type": "G", "q": "Nobody wants fake news to spread, __________?", "opts": ["do they", "don’t they", "are they", "is it"], "ans": "do they"}, {"type": "G", "q": "There wasn’t any transparency in that case, __________?", "opts": ["was there", "wasn’t there", "is there", "isn’t there"], "ans": "was there"}, {"type": "G", "q": "You’ll check multiple sources next time, __________?", "opts": ["won’t you", "will you", "don’t you", "didn’t you"], "ans": "won’t you"}];
+
+const subTabs=document.getElementById('subTabs');
+const content=document.getElementById('content');
+const unitExamPanel=document.getElementById('unitExam');
+let currentLesson=1;
+
+[...document.querySelectorAll('.lesson-tab')].forEach(tab=>{
+  if(tab.id==='unitExamTab') return;
+  tab.addEventListener('click',()=>{
+    [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    unitExamPanel.classList.add('hidden');
+    content.classList.remove('hidden');
+    currentLesson = parseInt(tab.dataset.lesson,10);
+    buildLessonTabs();
+  });
+});
+
+const unitExamTab=document.getElementById('unitExamTab');
+unitExamTab.addEventListener('click',()=>{
+  [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+  unitExamTab.classList.add('active');
+  content.classList.add('hidden');
+  subTabs.innerHTML='';
+  unitExamPanel.classList.remove('hidden');
+  buildUnitExam();
+});
+
+function buildLessonTabs(){
+  const L = LESSONS[currentLesson];
+  subTabs.innerHTML='';
+  document.documentElement.style.setProperty('--lesson', L.color);
+  (L.tabs||[]).forEach((name,i)=>{
+    const st=el(`<div class='sub-tab ${i===0?'active':''}' data-tab='${name}'>${name}</div>`);
+    st.addEventListener('click',()=>{
+      [...document.querySelectorAll('.sub-tab')].forEach(x=>x.classList.remove('active'));
+      st.classList.add('active');
+      renderSubTab(name);
+    });
+    subTabs.appendChild(st);
+  });
+  renderSubTab((L.tabs||[])[0]);
+}
+
+function renderSubTab(name){
+  const L = LESSONS[currentLesson];
+  if(name.startsWith('1_')) renderVocabulary(L);
+  else if(name.startsWith('2_')) renderGames(L);
+  else if(name.startsWith('3_')) renderReading(L);
+  else if(name==='Grammar') renderGrammar(L);
+}
+
+buildLessonTabs();
+
+function renderVocabulary(L){
+  const cards = (L.vocab||[]).map(v=>`<div class='card'>
+    <div class='chip'>${L.title}</div>
+    <h4>${v.en}</h4>
+    <p><strong>Arabic:</strong> ${v.ar}</p>
+    <p><em>Example:</em> ${v.ex}</p>
+    <div class='row'>
+      <button onclick="speech.say('${v.en}', speech.rateWord)">Play word (UK)</button>
+      <button class='ghost' onclick="speech.say('${v.ex}', speech.rateSentence)">Play example (slow)</button>
+    </div>
+  </div>`).join('');
+  const test = `<div class='card'>
+    <h4>Spelling Test – تسميع مكتوب (عربي ➜ إنجليزي)</h4>
+    <p>اكتب الكلمة الإنجليزية الصحيحة حسب المعنى العربي.</p>
+    <div id='spellArea'></div>
+  </div>`;
+  content.innerHTML = `<div class='grid'>${cards}${test}</div>`;
+  startSpelling(L.vocab||[]);
+}
+
+function startSpelling(items){
+  const area=document.getElementById('spellArea'); let idx=0, score=0; items=shuffle(items);
+  function ask(){ const v=items[idx];
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${items.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      <input id='ans' class='input' placeholder='اكتب الكلمة بالإنجليزية' />
+      <div class='row' style='margin-top:8px'>
+        <button onclick='checkSpell()'>Submit</button>
+        <button class='ghost' onclick="speech.say('${v.en}', speech.rateWord)">Hear word</button>
+      </div>
+    </div>`;
+    window.checkSpell = ()=>{
+      const val=document.getElementById('ans').value.trim().toLowerCase();
+      if(val===(v.en||'').toLowerCase()){
+        score++; idx++; area.querySelector('.mcq').classList.add('success'); speech.say('Well done!',1);
+        setTimeout(()=>{ if(idx<items.length) ask(); else area.innerHTML=`<div class='success card'><h4>Great job!</h4><p>Your score: ${score}/${items.length}</p></div>`; }, 600);
+      }else{ speech.say('Try again',1); }
+    }
+  } ask();
+}
+
+function renderGames(L){
+  const pairs=(L.games&&L.games.pairs)||[]; const left=pairs.map(p=>p[0]); const right=pairs.map(p=>p[1]);
+  const html=`<div class='grid'>
+    <div class='card'>
+      <h4>Match the Cards – اسحب الكلمة إلى معناها</h4>
+      <div class='drag-wrap'>
+        <div><h4>English</h4><div class='drag-list' id='dragLeft'></div></div>
+        <div><h4>Arabic</h4><div class='drag-list' id='dragRight'></div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h4>Kahoot‑style: Choose the English from Arabic</h4>
+      <div id='kahoot'></div>
+    </div>
+  </div>`;
+  content.innerHTML=html; buildDragDrop(left,right); buildKahootWord(L);
+}
+
+function buildDragDrop(left,right){
+  const L1=shuffle(left), R1=shuffle(right);
+  const dl=document.getElementById('dragLeft');
+  const dr=document.getElementById('dragRight');
+  dl.innerHTML=L1.map(x=>`<div class='drag-item' draggable='true' data-word='${x}'>${x}</div>`).join('');
+  dr.innerHTML=R1.map(x=>`<div class='drag-item dropzone' data-mean='${x}'>${x}</div>`).join('');
+  const dItems=[...dl.querySelectorAll('.drag-item[draggable]')]; dItems.forEach(it=>{ it.addEventListener('dragstart',e=>{e.dataTransfer.setData('text',it.dataset.word)}); });
+  [...dr.querySelectorAll('.dropzone')].forEach(zone=>{
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('drop',e=>{
+      const w=e.dataTransfer.getData('text'); const mean=zone.dataset.mean;
+      const ok = Object.values(LESSONS).some(L=>L.games && L.games.pairs.some(p=>p[0]===w && p[1]===mean));
+      if(ok){ zone.classList.add('ok'); zone.innerHTML=`${mean} ✓ <span class='chip'>${w}</span>`; speech.say(w, speech.rateWord); }
+      else{ zone.classList.add('bad'); speech.say('Try again',1); }
+    });
+  });
+}
+
+function buildKahootWord(L){
+  const area=document.getElementById('kahoot'); let idx=0, score=0;
+  const bank = shuffle(L.vocab||[]).map(v=>({word:v.en, ar:v.ar}));
+  function ask(){ const item=bank[idx];
+    const distractors = shuffle((L.vocab||[]).filter(x=>x.en!==item.word)).slice(0,3).map(x=>x.en);
+    const options = shuffle([item.word, ...distractors]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${bank.length} · Score: ${score}</p>
+      <p><strong>Arabic meaning:</strong> ${item.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===item.word){ opt.classList.add('correct'); score++; speech.say('Excellent!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct: ' + item.word, 0.95);
+          const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===item.word); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<bank.length)?ask():area.innerHTML=`<div class='success card'><h4>Well done!</h4><p>Your score: ${score}/${bank.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderReading(L){
+  const s=L.reading||[];
+  content.innerHTML = `<div class='grid'>
+    ${s.map((t,i)=>`<div class='card'><h4>Sentence ${i+1}</h4><p>${t}</p><div class='row'><button class='ghost' onclick="speech.say('${t}', speech.rateSentence)">Play (UK, slow)</button></div></div>`).join('')}
+    <div class='card'><h4>Mini MCQ on Words</h4><div id='readMcq'></div></div>
+  </div>`;
+  buildReadMcq(L);
+}
+
+function buildReadMcq(L){
+  const area=document.getElementById('readMcq'); const sample = shuffle(L.vocab||[]).slice(4); let idx=0, score=0;
+  function ask(){ const v=sample[idx]; const options = shuffle([v.en, ...shuffle(L.vocab||[]).filter(x=>x.en!==v.en).slice(0,3).map(x=>x.en)]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${sample.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===v.en){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct is ' + v.en,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===v.en); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<sample.length)?ask():area.innerHTML=`<div class='success card'><h4>Nice!</h4><p>Your score: ${score}/${sample.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderGrammar(L){
+  content.innerHTML = `<div class='card'>${L.grammar.explain}</div><div id='gramControls' class='row'><button class='ghost' id='retryGram'>Retry Grammar</button></div><div id='gramQs'></div>`;
+  const area=document.getElementById('gramQs');
+  function start(){ let idx=0, score=0; const qs=shuffle(L.grammar.qs);
+    function ask(){ const Q=qs[idx]; if(!Q){ area.innerHTML=`<div class='success card'><h4>Grammar Practice Done</h4><p>Your score: ${score}/${qs.length}</p></div>`; return }
+      const options=shuffle([...Q.opts]);
+      area.innerHTML=`<div class='mcq'>
+        <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+        <p>${Q.q}</p>
+        ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      </div>`;
+      [...area.querySelectorAll('.opt')].forEach(opt=>{
+        opt.addEventListener('click',()=>{
+          const val=opt.dataset.val;
+          if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Well done!',1); }
+          else{ opt.classList.add('wrong'); speech.say('Correct is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+          setTimeout(()=>{ idx++; ask(); }, 800);
+        });
+      });
+    }
+    ask();
+    const btn=document.getElementById('retryGram'); if(btn) btn.onclick=()=>start();
+  }
+  start();
+}
+
+function buildUnitExam(){
+  const area=unitExamPanel; let idx=0, score=0; const qs=shuffle(UNIT_EXAM);
+  function ask(){ if(idx>=qs.length){ area.innerHTML=`<div class='success card'><h4>Unit Exam Completed</h4><p>Your score: ${score}/${qs.length}</p><div class='row'><button class='ghost' id='retryExam'>Retry Exam</button></div></div>`; document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); }; return }
+    const Q=qs[idx]; const options=shuffle([...Q.opts]);
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+      <p>${Q.q}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      <div class='row' style='margin-top:8px'><button class='ghost' id='retryExam'>Retry Exam</button></div>
+    </div>`;
+    document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); };
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct answer is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; ask(); }, 800);
+      });
+    });
+  }
+  ask();
+}
+
+content.classList.remove('hidden'); unitExamPanel.classList.add('hidden');
+</script>
+</body>
+</html>

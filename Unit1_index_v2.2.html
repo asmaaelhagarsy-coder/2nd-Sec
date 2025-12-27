@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Unit 1 – Interactive Mini Platform (v2.2)</title>
+<style>
+:root{--bg:#f9fbff;--text:#1f2a44;--brand:#2563eb;--accent:#06b6d4;}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
+header{background:linear-gradient(90deg,var(--brand),#60a5fa);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;color:#ffffff}
+header .author{margin-left:auto;font-weight:700;color:#e0f2fe}
+.container{padding:12px}
+.lesson-tabs,.sub-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.lesson-tab,.sub-tab{padding:10px 12px;border-radius:12px;background:#fff;border:2px solid var(--brand);cursor:pointer;font-weight:800;color:#1f2a44;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.lesson-tab.active{background:var(--brand);color:#ffffff}
+.sub-tab.active{background:var(--lesson);color:#0a1633}
+.panel{background:#fff;border-radius:14px;border:2px solid #e2e8f0;padding:12px;min-height:260px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:2px solid #eaeef6;border-radius:12px;padding:12px;background:#fbfdff}
+.card h4{margin:0 0 8px;font-size:18px;color:#0b4a63}
+.chip{display:inline-block;background:#eefcf4;color:#2e7d32;border:1px solid #c8f3d1;border-radius:14px;padding:2px 8px;margin-right:6px;font-size:12px}
+button{border:none;border-radius:10px;padding:10px 14px;font-weight:800;background:var(--accent);color:#003246;cursor:pointer}
+button.ghost{background:#fff;border:2px solid var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input{border:2px solid #cfe8ff;border-radius:10px;padding:10px;font-size:16px;width:100%}
+.hidden{display:none}
+.success{background:#ecfdf5;border:2px solid #a7f3d0}
+.score{font-weight:800;color:#00527a}
+.drag-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drag-list{display:grid;grid-template-columns:1fr;gap:10px}
+.drag-item{background:#f4fbff;border:2px dashed #a8d8ff;border-radius:10px;padding:10px;min-height:56px}
+.drag-item[draggable='true']{cursor:grab}
+.dropzone{background:#fffbe6;border:2px dashed #ffd27f;min-height:56px}
+.ok{background:#e8f5e9;border-color:#a5d6a7}
+.bad{background:#ffebee;border-color:#ffcdd2}
+.mcq{border:2px dashed #d9eaff;border-radius:10px;padding:10px}
+.mcq .opt{border:2px solid #e2ecff;border-radius:10px;padding:10px;margin:6px 0;cursor:pointer}
+.mcq .opt.correct{background:#e6ffed;border-color:#b3f5c0}
+.mcq .opt.wrong{background:#ffebee;border-color:#ffcdd2}
+footer{padding:14px;text-align:center;color:#567}
+.note{background:#fff7e6;border:2px solid #ffe0a3;border-radius:12px;padding:10px}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Unit 1 – Egypt, Africa & Cooperation</h1>
+  <div class='author'>Created by <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='lesson-tabs' id='topTabs'>
+    <div class='lesson-tab active' data-lesson='1'>Lesson 1</div>
+    <div class='lesson-tab' data-lesson='2'>Lesson 2</div>
+    <div class='lesson-tab' data-lesson='3'>Lesson 3</div>
+    <div class='lesson-tab' data-lesson='4'>Lesson 4</div>
+    <div class='lesson-tab' id='unitExamTab'>Unit Exam</div>
+  </div>
+  <div id='subTabs' class='sub-tabs'></div>
+  <div id='content' class='panel'></div>
+  <div id='unitExam' class='panel hidden'></div>
+</div>
+<footer>Offline · British voice (en‑GB) · Matching & Kahoot · Unit Exam only</footer>
+<script>
+const speech = { rateWord:0.95, rateSentence:0.85, voice:null,
+  init(){ const vs = window.speechSynthesis.getVoices(); this.voice = vs.find(v=>/en-GB|UK|British/i.test(v.name))||vs[0]||null; },
+  say(t, r=1){ const u=new SpeechSynthesisUtterance(t); u.rate=r; u.lang='en-GB'; if(this.voice) u.voice=this.voice; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+};
+window.speechSynthesis.onvoiceschanged=()=>speech.init();
+function shuffle(a){return a.map(x=>({x,r:Math.random()})).sort((p,q)=>p.r-q.r).map(o=>o.x)}
+function el(h){const d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild}
+
+const lessons = {"1": {"title": "Egypt, Africa & Cooperation – Part 1", "color": "#93c5fd", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "gateway", "ar": "بوابة/معبر", "ex": "Egypt is a gateway between continents.", "hint": "Egypt’s strategic location makes it a ...... between Africa and the Middle East."}, {"en": "infrastructure", "ar": "بنية تحتية", "ex": "New roads improve infrastructure.", "hint": "The government is investing in ...... projects like roads and bridges."}, {"en": "partnership", "ar": "شراكة", "ex": "The two companies formed a partnership.", "hint": "Trade relationships depend on strong ...... between countries."}, {"en": "manufactured", "ar": "مُصنَّع", "ex": "Textiles are manufactured in factories.", "hint": "Goods like textiles are ...... in Egyptian factories."}, {"en": "mutual", "ar": "متبادل", "ex": "They have mutual respect.", "hint": "This ...... exchange creates jobs and boosts economic growth."}, {"en": "integration", "ar": "اندماج/تكامل", "ex": "Integration brings groups together.", "hint": "The process of bringing different groups together is called ......."}, {"en": "hybrid", "ar": "هجين/مُختلط", "ex": "A hybrid car uses two power sources.", "hint": "A mix of two different things is known as a ......."}, {"en": "rural", "ar": "ريفي/قروي", "ex": "Rural areas are far from big cities.", "hint": "Places far from big cities are described as ...... areas."}, {"en": "funding", "ar": "تمويل", "ex": "We need funding for the project.", "hint": "Money given to support a project is called ......."}, {"en": "expanding", "ar": "توسيع/تمدد", "ex": "The company is expanding to new regions.", "hint": "Making something bigger or spreading it to more places means ......."}], "reading": ["Egypt is a gateway between Africa and the Middle East.", "Infrastructure projects improve daily life.", "Strong partnership builds trust.", "Textiles are manufactured locally.", "Mutual benefits support growth.", "Integration brings people together."], "games": {"pairs": [["gateway", "بوابة/معبر"], ["infrastructure", "بنية تحتية"], ["partnership", "شراكة"], ["manufactured", "مُصنَّع"], ["mutual", "متبادل"], ["integration", "اندماج/تكامل"], ["hybrid", "هجين/مُختلط"], ["rural", "ريفي/قروي"], ["funding", "تمويل"], ["expanding", "توسيع/تمدد"]]}}, "2": {"title": "Egypt, Africa & Cooperation – Part 2", "color": "#bfdbfe", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "enhance", "ar": "يعزّز/يحسّن", "ex": "These tools enhance learning.", "hint": "The project aims to ...... crop yields by using modern irrigation."}, {"en": "annual", "ar": "سنوي", "ex": "The annual festival starts in May.", "hint": "The festival is held every year, so it is an ...... event."}, {"en": "milestone", "ar": "محطة فارقة/إنجاز مهم", "ex": "Graduation was a big milestone.", "hint": "The dam project was a major ...... in Egypt’s development."}, {"en": "capacity", "ar": "قدرة/استيعاب", "ex": "This hall has a large capacity.", "hint": "Egypt is working to build sustainable ...... in healthcare systems."}, {"en": "collaboration", "ar": "تعاون", "ex": "Collaboration leads to success.", "hint": "Solar panel factories show strong ...... between Egypt and Kenya."}, {"en": "gateway", "ar": "بوابة/معبر", "ex": "Egypt is a gateway between continents.", "hint": "Egypt’s strategic location makes it a ...... between Africa and the Middle East."}, {"en": "infrastructure", "ar": "بنية تحتية", "ex": "New roads improve infrastructure.", "hint": "The government is investing in ...... projects like roads and bridges."}, {"en": "partnership", "ar": "شراكة", "ex": "The two companies formed a partnership.", "hint": "Trade relationships depend on strong ...... between countries."}, {"en": "manufactured", "ar": "مُصنَّع", "ex": "Textiles are manufactured in factories.", "hint": "Goods like textiles are ...... in Egyptian factories."}, {"en": "mutual", "ar": "متبادل", "ex": "They have mutual respect.", "hint": "This ...... exchange creates jobs and boosts economic growth."}], "reading": ["Hybrid solutions can save energy.", "Rural areas need better services.", "Funding supports new ideas.", "The company is expanding this year.", "Modern tools enhance learning.", "The event is annual and popular."], "games": {"pairs": [["enhance", "يعزّز/يحسّن"], ["annual", "سنوي"], ["milestone", "محطة فارقة/إنجاز مهم"], ["capacity", "قدرة/استيعاب"], ["collaboration", "تعاون"], ["gateway", "بوابة/معبر"], ["infrastructure", "بنية تحتية"], ["partnership", "شراكة"], ["manufactured", "مُصنَّع"], ["mutual", "متبادل"]]}}, "3": {"title": "Listening & Grammar", "color": "#dbeafe", "tabs": ["1_Vocabulary", "2_Games", "3_Reading", "Grammar"], "vocab": [{"en": "integration", "ar": "اندماج/تكامل", "ex": "Integration brings groups together.", "hint": "The process of bringing different groups together is called ......."}, {"en": "hybrid", "ar": "هجين/مُختلط", "ex": "A hybrid car uses two power sources.", "hint": "A mix of two different things is known as a ......."}, {"en": "rural", "ar": "ريفي/قروي", "ex": "Rural areas are far from big cities.", "hint": "Places far from big cities are described as ...... areas."}, {"en": "funding", "ar": "تمويل", "ex": "We need funding for the project.", "hint": "Money given to support a project is called ......."}, {"en": "expanding", "ar": "توسيع/تمدد", "ex": "The company is expanding to new regions.", "hint": "Making something bigger or spreading it to more places means ......."}, {"en": "enhance", "ar": "يعزّز/يحسّن", "ex": "These tools enhance learning.", "hint": "The project aims to ...... crop yields by using modern irrigation."}, {"en": "annual", "ar": "سنوي", "ex": "The annual festival starts in May.", "hint": "The festival is held every year, so it is an ...... event."}, {"en": "milestone", "ar": "محطة فارقة/إنجاز مهم", "ex": "Graduation was a big milestone.", "hint": "The dam project was a major ...... in Egypt’s development."}, {"en": "capacity", "ar": "قدرة/استيعاب", "ex": "This hall has a large capacity.", "hint": "Egypt is working to build sustainable ...... in healthcare systems."}, {"en": "collaboration", "ar": "تعاون", "ex": "Collaboration leads to success.", "hint": "Solar panel factories show strong ...... between Egypt and Kenya."}], "reading": ["Graduation is a real milestone.", "Hospitals increase capacity to help more people.", "Collaboration makes projects stronger.", "We are building bridges of trust now.", "A convoy is being sent today.", "New houses are being built quickly."], "grammar": {"explain": "<div><h4>Present Continuous & Passive + Arrangements</h4><ul><li><strong>Present Continuous</strong>: am/is/are + V‑ing (actions now). <em>We are meeting.</em></li><li><strong>Passive (Present Continuous)</strong>: am/is/are + being + Vpp. <em>A bridge is being built.</em></li><li><strong>Arrangements</strong>: for planned future times (with <em>tomorrow, next week</em>).</li></ul></div>", "qs": [{"q": "Egypt _____ new projects to improve infrastructure now.", "opts": ["launches", "is launching", "launched", "will launch"], "ans": "is launching"}, {"q": "Doctors _____ medical help in rural areas at the moment.", "opts": ["provide", "are providing", "provided", "will provide"], "ans": "are providing"}, {"q": "A new bridge _____ across the Nile now.", "opts": ["builds", "is building", "is being built", "was built"], "ans": "is being built"}, {"q": "English _____ in many schools right now.", "opts": ["is teaching", "are teaching", "is being taught", "taught"], "ans": "is being taught"}, {"q": "My friends _____ football in the park now.", "opts": ["are playing", "is playing", "are played", "was playing"], "ans": "are playing"}, {"q": "The roads _____ because of heavy rain today.", "opts": ["are cleaning", "is cleaning", "are being cleaned", "cleaned"], "ans": "are being cleaned"}, {"q": "I _____ to music while doing my homework.", "opts": ["listens", "am listening", "listened", "will listen"], "ans": "am listening"}, {"q": "New houses _____ quickly in this area.", "opts": ["are being built", "is built", "are building", "was built"], "ans": "are being built"}, {"q": "Scholarships _____ to African students this year.", "opts": ["are offering", "are being offered", "offered", "will offer"], "ans": "are being offered"}, {"q": "The government _____ heavily in education now.", "opts": ["invests", "is investing", "invested", "will invest"], "ans": "is investing"}, {"q": "A medical convoy _____ to Kenya at the moment.", "opts": ["sends", "is sending", "is being sent", "was sent"], "ans": "is being sent"}, {"q": "Farmers _____ modern irrigation techniques these days.", "opts": ["use", "are using", "used", "will use"], "ans": "are using"}, {"q": "The final match _____ now.", "opts": ["plays", "is playing", "is being played", "was played"], "ans": "is being played"}, {"q": "Important bridges of trust _____ across Africa now.", "opts": ["are building", "are being built", "built", "will build"], "ans": "are being built"}, {"q": "Egypt _____ its role in African cooperation these days.", "opts": ["strengthens", "is strengthening", "strengthened", "will strengthen"], "ans": "is strengthening"}]}, "games": {"pairs": [["integration", "اندماج/تكامل"], ["hybrid", "هجين/مُختلط"], ["rural", "ريفي/قروي"], ["funding", "تمويل"], ["expanding", "توسيع/تمدد"], ["enhance", "يعزّز/يحسّن"], ["annual", "سنوي"], ["milestone", "محطة فارقة/إنجاز مهم"], ["capacity", "قدرة/استيعاب"], ["collaboration", "تعاون"]]}}, "4": {"title": "Egypt, Africa & Cooperation – Part 3", "color": "#eff6ff", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "gateway", "ar": "بوابة/معبر", "ex": "Egypt is a gateway between continents.", "hint": "Egypt’s strategic location makes it a ...... between Africa and the Middle East."}, {"en": "infrastructure", "ar": "بنية تحتية", "ex": "New roads improve infrastructure.", "hint": "The government is investing in ...... projects like roads and bridges."}, {"en": "partnership", "ar": "شراكة", "ex": "The two companies formed a partnership.", "hint": "Trade relationships depend on strong ...... between countries."}, {"en": "manufactured", "ar": "مُصنَّع", "ex": "Textiles are manufactured in factories.", "hint": "Goods like textiles are ...... in Egyptian factories."}, {"en": "mutual", "ar": "متبادل", "ex": "They have mutual respect.", "hint": "This ...... exchange creates jobs and boosts economic growth."}, {"en": "integration", "ar": "اندماج/تكامل", "ex": "Integration brings groups together.", "hint": "The process of bringing different groups together is called ......."}, {"en": "hybrid", "ar": "هجين/مُختلط", "ex": "A hybrid car uses two power sources.", "hint": "A mix of two different things is known as a ......."}, {"en": "rural", "ar": "ريفي/قروي", "ex": "Rural areas are far from big cities.", "hint": "Places far from big cities are described as ...... areas."}, {"en": "funding", "ar": "تمويل", "ex": "We need funding for the project.", "hint": "Money given to support a project is called ......."}, {"en": "expanding", "ar": "توسيع/تمدد", "ex": "The company is expanding to new regions.", "hint": "Making something bigger or spreading it to more places means ......."}], "reading": ["Farmers are using modern irrigation these days.", "English is being taught in many schools.", "The final match is being played now.", "We are holding a meeting tomorrow.", "The government is signing an agreement next week.", "Doctors are organizing a training session on Friday."], "games": {"pairs": [["gateway", "بوابة/معبر"], ["infrastructure", "بنية تحتية"], ["partnership", "شراكة"], ["manufactured", "مُصنَّع"], ["mutual", "متبادل"], ["integration", "اندماج/تكامل"], ["hybrid", "هجين/مُختلط"], ["rural", "ريفي/قروي"], ["funding", "تمويل"], ["expanding", "توسيع/تمدد"]]}}};
+const UNIT_EXAM = [{"type": "V", "q": "Egypt’s strategic location makes it a _____ between Africa and the Middle East.", "opts": ["barrier", "gateway", "obstacle", "border"], "ans": "gateway"}, {"type": "V", "q": "The government is investing in _____ projects like roads and bridges.", "opts": ["infrastructure", "partnership", "funding", "rural"], "ans": "infrastructure"}, {"type": "V", "q": "Trade relationships depend on strong _____ between countries.", "opts": ["integration", "hybrid", "partnership", "milestone"], "ans": "partnership"}, {"type": "V", "q": "Goods like textiles are _____ in Egyptian factories.", "opts": ["mutual", "manufactured", "stable", "targeted"], "ans": "manufactured"}, {"type": "V", "q": "This _____ exchange creates jobs and boosts economic growth.", "opts": ["hybrid", "mutual", "gateway", "annual"], "ans": "mutual"}, {"type": "V", "q": "The process of bringing different groups together is called _____.", "opts": ["integration", "collaboration", "milestone", "capacity"], "ans": "integration"}, {"type": "V", "q": "A mix of two different things is known as a _____.", "opts": ["hybrid", "rural", "funding", "gateway"], "ans": "hybrid"}, {"type": "V", "q": "Places far from big cities are described as _____ areas.", "opts": ["rural", "stable", "targeted", "annual"], "ans": "rural"}, {"type": "V", "q": "Money given to support a project is called _____.", "opts": ["funding", "capacity", "engagement", "milestone"], "ans": "funding"}, {"type": "V", "q": "Making something bigger or spreading it to more places means _____.", "opts": ["expanding", "enhancing", "highlighting", "manufacturing"], "ans": "expanding"}, {"type": "V", "q": "The project aims to _____ crop yields by using modern irrigation.", "opts": ["enhance", "expand", "integrate", "manufacture"], "ans": "enhance"}, {"type": "V", "q": "The festival is held every year, so it is an _____ event.", "opts": ["annual", "hybrid", "milestone", "targeted"], "ans": "annual"}, {"type": "V", "q": "The dam project was a major _____ in Egypt’s development.", "opts": ["milestone", "gateway", "partnership", "capacity"], "ans": "milestone"}, {"type": "V", "q": "Egypt is working to build sustainable _____ in healthcare systems.", "opts": ["capacity", "collaboration", "integration", "funding"], "ans": "capacity"}, {"type": "V", "q": "Solar panel factories show strong _____ between Egypt and Kenya.", "opts": ["collaboration", "gateway", "hybrid", "partnership"], "ans": "collaboration"}, {"type": "G", "q": "Egypt _____ new projects to improve infrastructure now.", "opts": ["launches", "is launching", "launched", "will launch"], "ans": "is launching"}, {"type": "G", "q": "Doctors _____ medical help in rural areas at the moment.", "opts": ["provide", "are providing", "provided", "will provide"], "ans": "are providing"}, {"type": "G", "q": "A new bridge _____ across the Nile now.", "opts": ["builds", "is building", "is being built", "was built"], "ans": "is being built"}, {"type": "G", "q": "English _____ in many schools right now.", "opts": ["is teaching", "are teaching", "is being taught", "taught"], "ans": "is being taught"}, {"type": "G", "q": "My friends _____ football in the park now.", "opts": ["are playing", "is playing", "are played", "was playing"], "ans": "are playing"}, {"type": "G", "q": "The roads _____ because of heavy rain today.", "opts": ["are cleaning", "is cleaning", "are being cleaned", "cleaned"], "ans": "are being cleaned"}, {"type": "G", "q": "I _____ to music while doing my homework.", "opts": ["listens", "am listening", "listened", "will listen"], "ans": "am listening"}, {"type": "G", "q": "New houses _____ quickly in this area.", "opts": ["are being built", "is built", "are building", "was built"], "ans": "are being built"}, {"type": "G", "q": "Scholarships _____ to African students this year.", "opts": ["are offering", "are being offered", "offered", "will offer"], "ans": "are being offered"}, {"type": "G", "q": "The government _____ heavily in education now.", "opts": ["invests", "is investing", "invested", "will invest"], "ans": "is investing"}, {"type": "G", "q": "A medical convoy _____ to Kenya at the moment.", "opts": ["sends", "is sending", "is being sent", "was sent"], "ans": "is being sent"}, {"type": "G", "q": "Farmers _____ modern irrigation techniques these days.", "opts": ["use", "are using", "used", "will use"], "ans": "are using"}, {"type": "G", "q": "The final match _____ now.", "opts": ["plays", "is playing", "is being played", "was played"], "ans": "is being played"}, {"type": "G", "q": "Important bridges of trust _____ across Africa now.", "opts": ["are building", "are being built", "built", "will build"], "ans": "are being built"}, {"type": "G", "q": "Egypt _____ its role in African cooperation these days.", "opts": ["strengthens", "is strengthening", "strengthened", "will strengthen"], "ans": "is strengthening"}, {"type": "F", "q": "We _____ a meeting with African leaders tomorrow at 10 a.m.", "opts": ["are holding", "hold", "held", "will hold"], "ans": "are holding"}, {"type": "F", "q": "The government _____ a new trade agreement next week.", "opts": ["is signing", "signs", "signed", "will sign"], "ans": "is signing"}, {"type": "F", "q": "Egyptian doctors _____ a training session for nurses on Friday.", "opts": ["are organizing", "organize", "organized", "will organize"], "ans": "are organizing"}];
+
+const subTabs=document.getElementById('subTabs');
+const content=document.getElementById('content');
+const unitExamPanel=document.getElementById('unitExam');
+let currentLesson=1;
+
+[...document.querySelectorAll('.lesson-tab')].forEach(tab=>{
+  if(tab.id==='unitExamTab') return;
+  tab.addEventListener('click',()=>{
+    [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    unitExamPanel.classList.add('hidden');
+    content.classList.remove('hidden');
+    currentLesson = parseInt(tab.dataset.lesson,10);
+    buildLessonTabs();
+  });
+});
+
+const unitExamTab=document.getElementById('unitExamTab');
+unitExamTab.addEventListener('click',()=>{
+  [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+  unitExamTab.classList.add('active');
+  content.classList.add('hidden');
+  subTabs.innerHTML='';
+  unitExamPanel.classList.remove('hidden');
+  buildUnitExam();
+});
+
+function buildLessonTabs(){
+  const L = lessons[currentLesson];
+  subTabs.innerHTML='';
+  document.documentElement.style.setProperty('--lesson', L.color);
+  (L.tabs||[]).forEach((name,i)=>{
+    const st=el(`<div class='sub-tab ${i===0?'active':''}' data-tab='${name}'>${name}</div>`);
+    st.addEventListener('click',()=>{
+      [...document.querySelectorAll('.sub-tab')].forEach(x=>x.classList.remove('active'));
+      st.classList.add('active');
+      renderSubTab(name);
+    });
+    subTabs.appendChild(st);
+  });
+  renderSubTab((L.tabs||[])[0]);
+}
+
+function renderSubTab(name){
+  const L = lessons[currentLesson];
+  if(name.startsWith('1_')) renderVocabulary(L);
+  else if(name.startsWith('2_')) renderGames(L);
+  else if(name.startsWith('3_')) renderReading(L);
+  else if(name==='Grammar') renderGrammar(L);
+}
+
+buildLessonTabs();
+
+function renderVocabulary(L){
+  const cards = (L.vocab||[]).map(v=>`<div class='card'>
+    <div class='chip'>${L.title}</div>
+    <h4>${v.en}</h4>
+    <p><strong>Arabic:</strong> ${v.ar}</p>
+    <p><em>Example:</em> ${v.ex}</p>
+    <div class='row'>
+      <button onclick="speech.say('${v.en}', speech.rateWord)">Play word (UK)</button>
+      <button class='ghost' onclick="speech.say('${v.ex}', speech.rateSentence)">Play example (slow)</button>
+    </div>
+  </div>`).join('');
+  const test = `<div class='card'>
+    <h4>Spelling Test – تسميع مكتوب (عربي ➜ إنجليزي)</h4>
+    <p>اكتب الكلمة الإنجليزية الصحيحة حسب المعنى العربي. أصوات تشجيع وحركات عند الإجابة الصحيحة.</p>
+    <div id='spellArea'></div>
+  </div>`;
+  content.innerHTML = `<div class='grid'>${cards}${test}</div>`;
+  startSpelling(L.vocab||[]);
+}
+
+function startSpelling(items){
+  const area=document.getElementById('spellArea'); let idx=0, score=0; items=shuffle(items);
+  function ask(){ const v=items[idx];
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${items.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      <input id='ans' class='input' placeholder='اكتب الكلمة بالإنجليزية' />
+      <div class='row' style='margin-top:8px'>
+        <button onclick='checkSpell()'>Submit</button>
+        <button class='ghost' onclick="speech.say('${v.en}', speech.rateWord)">Hear word</button>
+      </div>
+    </div>`;
+    window.checkSpell = ()=>{
+      const val=document.getElementById('ans').value.trim().toLowerCase();
+      if(val===(v.en||'').toLowerCase()){
+        score++; idx++; area.querySelector('.mcq').classList.add('success'); speech.say('Well done!',1);
+        setTimeout(()=>{ if(idx<items.length) ask(); else area.innerHTML=`<div class='success card'><h4>Great job!</h4><p>Your score: ${score}/${items.length}</p></div>`; }, 600);
+      }else{ speech.say('Try again',1); }
+    }
+  } ask();
+}
+
+function renderGames(L){
+  const pairs=(L.games&&L.games.pairs)||[]; const left=pairs.map(p=>p[0]); const right=pairs.map(p=>p[1]);
+  const html=`<div class='grid'>
+    <div class='card'>
+      <h4>Match the Cards – اسحب الكلمة إلى معناها</h4>
+      <div class='drag-wrap'>
+        <div><h4>English</h4><div class='drag-list' id='dragLeft'></div></div>
+        <div><h4>Arabic</h4><div class='drag-list' id='dragRight'></div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h4>Kahoot‑style: Choose the English from Arabic</h4>
+      <div id='kahoot'></div>
+    </div>
+  </div>`;
+  content.innerHTML=html; buildDragDrop(left,right); buildKahootWord(L);
+}
+
+function buildDragDrop(left,right){
+  const L1=shuffle(left), R1=shuffle(right);
+  const dl=document.getElementById('dragLeft');
+  const dr=document.getElementById('dragRight');
+  dl.innerHTML=L1.map(x=>`<div class='drag-item' draggable='true' data-word='${x}'>${x}</div>`).join('');
+  dr.innerHTML=R1.map(x=>`<div class='drag-item dropzone' data-mean='${x}'>${x}</div>`).join('');
+  const dItems=[...dl.querySelectorAll('.drag-item[draggable]')]; dItems.forEach(it=>{ it.addEventListener('dragstart',e=>{e.dataTransfer.setData('text',it.dataset.word)}); });
+  [...dr.querySelectorAll('.dropzone')].forEach(zone=>{
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('drop',e=>{
+      const w=e.dataTransfer.getData('text'); const mean=zone.dataset.mean;
+      const ok = Object.values(lessons).some(L=>L.games && L.games.pairs.some(p=>p[0]===w && p[1]===mean));
+      if(ok){ zone.classList.add('ok'); zone.innerHTML=`${mean} ✓ <span class='chip'>${w}</span>`; speech.say(w, speech.rateWord); }
+      else{ zone.classList.add('bad'); speech.say('Try again',1); }
+    });
+  });
+}
+
+function buildKahootWord(L){
+  const area=document.getElementById('kahoot'); let idx=0, score=0;
+  const bank = shuffle(L.vocab||[]).map(v=>({word:v.en, ar:v.ar}));
+  function ask(){ const item=bank[idx];
+    const distractors = shuffle((L.vocab||[]).filter(x=>x.en!==item.word)).slice(0,3).map(x=>x.en);
+    const options = shuffle([item.word, ...distractors]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${bank.length} · Score: ${score}</p>
+      <p><strong>Arabic meaning:</strong> ${item.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===item.word){ opt.classList.add('correct'); score++; speech.say('Excellent!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct: ' + item.word, 0.95);
+          const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===item.word); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<bank.length)?ask():area.innerHTML=`<div class='success card'><h4>Well done!</h4><p>Your score: ${score}/${bank.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderReading(L){
+  const s=L.reading||[];
+  content.innerHTML = `<div class='grid'>
+    ${s.map((t,i)=>`<div class='card'><h4>Sentence ${i+1}</h4><p>${t}</p><div class='row'><button class='ghost' onclick="speech.say('${t}', speech.rateSentence)">Play (UK, slow)</button></div></div>`).join('')}
+    <div class='card'><h4>Mini MCQ on Words</h4><div id='readMcq'></div></div>
+  </div>`;
+  buildReadMcq(L);
+}
+
+function buildReadMcq(L){
+  const area=document.getElementById('readMcq'); const sample = shuffle(L.vocab||[]).slice(6); let idx=0, score=0;
+  function ask(){ const v=sample[idx]; const options = shuffle([v.en, ...shuffle(L.vocab||[]).filter(x=>x.en!==v.en).slice(0,3).map(x=>x.en)]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${sample.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===v.en){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct is ' + v.en,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===v.en); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<sample.length)?ask():area.innerHTML=`<div class='success card'><h4>Nice!</h4><p>Your score: ${score}/${sample.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderGrammar(L){
+  content.innerHTML = `<div class='card'>${L.grammar.explain}</div><div id='gramControls' class='row'><button class='ghost' id='retryGram'>Retry Grammar</button></div><div id='gramQs'></div>`;
+  const area=document.getElementById('gramQs');
+  function start(){ let idx=0, score=0; const qs=shuffle(L.grammar.qs);
+    function ask(){ const Q=qs[idx]; if(!Q){ area.innerHTML=`<div class='success card'><h4>Grammar Practice Done</h4><p>Your score: ${score}/${qs.length}</p></div>`; return }
+      const options=shuffle([...Q.opts]);
+      area.innerHTML=`<div class='mcq'>
+        <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+        <p>${Q.q.replace('___','__________')}</p>
+        ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      </div>`;
+      [...area.querySelectorAll('.opt')].forEach(opt=>{
+        opt.addEventListener('click',()=>{
+          const val=opt.dataset.val;
+          if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Well done!',1); }
+          else{ opt.classList.add('wrong'); speech.say('Correct is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+          setTimeout(()=>{ idx++; ask(); }, 800);
+        });
+      });
+    }
+    ask();
+    document.getElementById('retryGram').onclick=()=>{ start(); };
+  }
+  start();
+}
+
+function buildUnitExam(){
+  const area=unitExamPanel; let idx=0, score=0; const qs=shuffle(UNIT_EXAM);
+  function ask(){ if(idx>=qs.length){ area.innerHTML=`<div class='success card'><h4>Unit Exam Completed</h4><p>Your score: ${score}/${qs.length}</p><div class='row'><button class='ghost' id='retryExam'>Retry Exam</button></div></div>`; document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); }; return }
+    const Q=qs[idx]; const options=shuffle([...Q.opts]);
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+      <p>${Q.q}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      <div class='row' style='margin-top:8px'><button class='ghost' id='retryExam'>Retry Exam</button></div>
+    </div>`;
+    document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); };
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct answer is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; ask(); }, 800);
+      });
+    });
+  }
+  ask();
+}
+
+content.classList.remove('hidden'); unitExamPanel.classList.add('hidden');
+</script>
+</body>
+</html>

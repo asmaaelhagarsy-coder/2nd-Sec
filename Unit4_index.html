@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Unit 4 – Interactive Mini Platform (v2.1 · Pink)</title>
+<style>
+:root{--bg:#fffafc;--text:#1f1b2d;--brand:#ec4899;--accent:#22c55e;}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f1b2d}
+header{background:linear-gradient(90deg,#ec4899,#f9a8d4);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;color:#fff;font-size:20px}
+header .author{margin-left:auto;color:#ffe4f2;font-weight:700}
+.container{padding:12px}
+.lesson-tabs,.sub-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.lesson-tab,.sub-tab{padding:10px 12px;border-radius:12px;background:#fff;border:2px solid var(--brand);cursor:pointer;font-weight:800;color:#4a1942;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.lesson-tab.active{background:#ec4899;color:#ffffff}
+.sub-tab.active{background:var(--lesson);color:#4a1942}
+.panel{background:#fff;border-radius:14px;border:2px solid #e2e8f0;padding:12px;min-height:260px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:2px solid #ffd6e7;border-radius:12px;padding:12px;background:#fffafc}
+.card h4{margin:0 0 8px;font-size:18px;color:#4a1942}
+.chip{display:inline-block;background:#ffe4ef;color:#4a1942;border:1px solid #ffc2db;border-radius:14px;padding:2px 8px;margin-right:6px;font-size:12px}
+button{border:none;border-radius:10px;padding:10px 14px;font-weight:800;background:var(--accent);color:#0b3f1f;cursor:pointer}
+button.ghost{background:#fff;border:2px solid var(--accent);color:#0b3f1f}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input{border:2px solid #ffd6e7;border-radius:10px;padding:10px;font-size:16px;width:100%}
+.hidden{display:none}
+.success{background:#ecfdf5;border:2px solid #a7f3d0}
+.score{font-weight:800;color:#4a1942}
+.drag-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drag-list{display:grid;grid-template-columns:1fr;gap:10px}
+.drag-item{background:#ffeaf4;border:2px dashed #ffc2db;border-radius:10px;padding:10px;min-height:56px}
+.drag-item[draggable='true']{cursor:grab}
+.dropzone{background:#fffbe6;border:2px dashed #ffd27f;min-height:56px}
+.ok{background:#e8f5e9;border-color:#a5d6a7}
+.bad{background:#ffebee;border-color:#ffcdd2}
+.mcq{border:2px dashed #ffd6e7;border-radius:10px;padding:10px}
+.mcq .opt{border:2px solid #ffc2db;border-radius:10px;padding:10px;margin:6px 0;cursor:pointer}
+.mcq .opt.correct{background:#e6ffed;border-color:#b3f5c0}
+.mcq .opt.wrong{background:#ffebee;border-color:#ffcdd2}
+.note{background:#fff7e6;border:2px solid #ffe0a3;border-radius:12px;padding:10px}
+footer{padding:14px;text-align:center;color:#7a526f}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Unit 4 – Natural Disasters</h1>
+  <div class='author'>Created by <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='lesson-tabs' id='topTabs'>
+    <div class='lesson-tab active' data-lesson='1'>Lesson 1</div>
+    <div class='lesson-tab' data-lesson='2'>Lesson 2</div>
+    <div class='lesson-tab' data-lesson='3'>Lesson 3</div>
+    <div class='lesson-tab' data-lesson='4'>Lesson 4</div>
+    <div class='lesson-tab' id='unitExamTab'>Unit Exam</div>
+  </div>
+  <div id='subTabs' class='sub-tabs'></div>
+  <div id='content' class='panel'></div>
+  <div id='unitExam' class='panel hidden'></div>
+</div>
+<footer>Offline · British voice (en‑GB) · Matching & Kahoot · Grammar in Lesson 3 · Unit Exam (English‑only)</footer>
+<script>
+const speech = { rateWord:0.95, rateSentence:0.85, voice:null,
+  init(){ const vs = window.speechSynthesis.getVoices(); this.voice = vs.find(v=>/en-GB|UK|British/i.test(v.name))||vs[0]||null; },
+  say(t, r=1){ const u=new SpeechSynthesisUtterance(t); u.rate=r; u.lang='en-GB'; if(this.voice) u.voice=this.voice; speechSynthesis.cancel(); speechSynthesis.speak(u); }
+};
+window.speechSynthesis.onvoiceschanged=()=>speech.init();
+function shuffle(a){return a.map(x=>({x:x,r:Math.random()})).sort((p,q)=>p.r-q.r).map(o=>o.x)}
+function el(h){const d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild}
+
+const LESSONS = {"1": {"title": "Natural Disasters – Part 1", "color": "#f9d5e5", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "prediction", "ar": "تنبؤ", "ex": "Better prediction helps reduce risk."}, {"en": "accuracy", "ar": "دقة", "ex": "High accuracy saves lives."}, {"en": "Meteorologists", "ar": "خبراء الأرصاد", "ex": "Meteorologists analyze data to forecast."}, {"en": "humidity", "ar": "رطوبة الجو", "ex": "Humidity affects rainfall."}, {"en": "intensity", "ar": "شِدّة/قوة", "ex": "The storm intensity is increasing."}, {"en": "tectonic plates", "ar": "صفائح تكتونية", "ex": "Tectonic plates shift and cause quakes."}, {"en": "preparedness", "ar": "جاهزية/استعداد", "ex": "Preparedness reduces disaster impact."}, {"en": "drills", "ar": "تدريبات/مناورات", "ex": "Schools run evacuation drills annually."}], "games": {"pairs": [["prediction", "تنبؤ"], ["accuracy", "دقة"], ["Meteorologists", "خبراء الأرصاد"], ["humidity", "رطوبة الجو"], ["intensity", "شِدّة/قوة"], ["tectonic plates", "صفائح تكتونية"], ["preparedness", "جاهزية/استعداد"], ["drills", "تدريبات/مناورات"]]}, "reading": ["Scientists have made remarkable progress in weather prediction using satellites and radar.", "Modern systems can forecast storms with impressive accuracy days in advance.", "Meteorologists track humidity, pressure and intensity to issue early warnings.", "Governments organize evacuations to protect citizens before hurricanes strike.", "Earthquakes remain hard to predict because seismic activity occurs deep underground.", "Preparedness and drills in schools save lives by reducing chaos during emergencies."]}, "2": {"title": "Natural Disasters – Part 2", "color": "#f7c0d3", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "waterproof", "ar": "مقاوم للماء", "ex": "Keep papers in a waterproof container."}, {"en": "evacuation", "ar": "إخلاء", "ex": "Evacuation plans protect families."}, {"en": "track", "ar": "يتابع/يرصد", "ex": "Satellites track storms over the sea."}, {"en": "decades", "ar": "عقود", "ex": "Forecasting improved over decades."}, {"en": "deep underground", "ar": "عميق تحت الأرض", "ex": "Quakes start deep underground."}, {"en": "prepared", "ar": "مستعد", "ex": "Cities must be prepared."}], "games": {"pairs": [["waterproof", "مقاوم للماء"], ["evacuation", "إخلاء"], ["track", "يتابع/يرصد"], ["decades", "عقود"], ["deep underground", "عميق تحت الأرض"], ["prepared", "مستعد"]]}, "reading": ["A storm may change direction unexpectedly, so plans must be flexible.", "Waterproof containers protect vital documents such as IDs and medical records.", "Community drills build awareness and strengthen response teams.", "Improved tracking helps hospitals prepare staff and supplies in time.", "Infrastructure planning reduces damage and accelerates recovery.", "Balanced policies focus on both accuracy and public communication."]}, "3": {"title": "Listening & Grammar", "color": "#f5a9c4", "tabs": ["1_Vocabulary", "2_Games", "3_Reading", "Grammar"], "vocab": [{"en": "tectonic plates", "ar": "صفائح تكتونية", "ex": "Tectonic plates shift and cause quakes."}, {"en": "preparedness", "ar": "جاهزية/استعداد", "ex": "Preparedness reduces disaster impact."}, {"en": "drills", "ar": "تدريبات/مناورات", "ex": "Schools run evacuation drills annually."}, {"en": "waterproof", "ar": "مقاوم للماء", "ex": "Keep papers in a waterproof container."}, {"en": "evacuation", "ar": "إخلاء", "ex": "Evacuation plans protect families."}, {"en": "track", "ar": "يتابع/يرصد", "ex": "Satellites track storms over the sea."}, {"en": "decades", "ar": "عقود", "ex": "Forecasting improved over decades."}, {"en": "deep underground", "ar": "عميق تحت الأرض", "ex": "Quakes start deep underground."}], "games": {"pairs": [["tectonic plates", "صفائح تكتونية"], ["preparedness", "جاهزية/استعداد"], ["drills", "تدريبات/مناورات"], ["waterproof", "مقاوم للماء"], ["evacuation", "إخلاء"], ["track", "يتابع/يرصد"], ["decades", "عقود"], ["deep underground", "عميق تحت الأرض"]]}, "reading": ["The listening explains how meteorologists track storms and monitor humidity, pressure, and intensity.", "It shows that hurricanes are generally easier to predict than earthquakes because seismic activity starts deep underground.", "The report highlights early‑warning systems that trigger school drills and city‑wide evacuation plans.", "Families are advised to prepare waterproof kits for documents and basic supplies before storm season.", "Hospitals and rescue teams coordinate in advance as forecasts improve in accuracy over the decades.", "The key message is preparedness: follow official alerts, stay calm, and act quickly when instructed."], "grammar": {"explain": "<div><h4>Comparative & Superlative Adjectives</h4><ul><li>Short adjectives: cold → colder → the coldest.</li><li>Long adjectives: comfortable → more comfortable → the most comfortable.</li><li>Irregular: good → better → the best; bad → worse → the worst.</li><li>Avoid double forms: say ‘easier’ not ‘more easy’.</li></ul></div>", "qs": [{"q": "This storm is __________ than the one last year.", "opts": ["stronger", "strong", "strongest", "more strong"], "ans": "stronger"}, {"q": "Yesterday was the __________ day of the summer; it reached 45°C.", "opts": ["hottest", "hot", "hotter", "most hot"], "ans": "hottest"}, {"q": "Hurricanes are usually __________ to predict than earthquakes.", "opts": ["easier", "easy", "easiest", "more easy"], "ans": "easier"}, {"q": "Mount Everest is the __________ mountain in the world.", "opts": ["highest", "higher", "high", "most high"], "ans": "highest"}, {"q": "This hotel is __________ than the one we stayed in before.", "opts": ["more comfortable", "comfortable", "most comfortable", "comfortabler"], "ans": "more comfortable"}, {"q": "The Nile is the __________ river in Africa.", "opts": ["longest", "longer", "long", "most long"], "ans": "longest"}, {"q": "Today is __________ than yesterday.", "opts": ["colder", "cold", "coldest", "more cold"], "ans": "colder"}, {"q": "This exercise is __________ than the last one.", "opts": ["easier", "easy", "easiest", "more easy"], "ans": "easier"}, {"q": "She is the __________ student in the class.", "opts": ["most intelligent", "intelligent", "more intelligent", "intelligenter"], "ans": "most intelligent"}, {"q": "Cairo is __________ than many other African cities.", "opts": ["busier", "busy", "busiest", "more busy"], "ans": "busier"}, {"q": "This phone is the __________ I’ve ever had.", "opts": ["best", "better", "good", "most good"], "ans": "best"}, {"q": "The 2011 earthquake was one of the __________ disasters in history.", "opts": ["most powerful", "powerful", "powerfuller", "powerfullest"], "ans": "most powerful"}, {"q": "He is __________ than his brother.", "opts": ["taller", "tall", "tallest", "more tall"], "ans": "taller"}, {"q": "This box is __________ than the other one.", "opts": ["heavier", "heavy", "heaviest", "more heavy"], "ans": "heavier"}, {"q": "Of the two answers, this one is __________.", "opts": ["more correct", "correct", "most correct", "correcter"], "ans": "more correct"}]}}, "4": {"title": "Natural Disasters – Part 3", "color": "#f38fb4", "tabs": ["1_Vocabulary", "2_Games", "3_Reading"], "vocab": [{"en": "prediction", "ar": "تنبؤ", "ex": "Better prediction helps reduce risk."}, {"en": "accuracy", "ar": "دقة", "ex": "High accuracy saves lives."}, {"en": "Meteorologists", "ar": "خبراء الأرصاد", "ex": "Meteorologists analyze data to forecast."}, {"en": "humidity", "ar": "رطوبة الجو", "ex": "Humidity affects rainfall."}, {"en": "intensity", "ar": "شِدّة/قوة", "ex": "The storm intensity is increasing."}, {"en": "tectonic plates", "ar": "صفائح تكتونية", "ex": "Tectonic plates shift and cause quakes."}, {"en": "preparedness", "ar": "جاهزية/استعداد", "ex": "Preparedness reduces disaster impact."}, {"en": "drills", "ar": "تدريبات/مناورات", "ex": "Schools run evacuation drills annually."}], "games": {"pairs": [["prediction", "تنبؤ"], ["accuracy", "دقة"], ["Meteorologists", "خبراء الأرصاد"], ["humidity", "رطوبة الجو"], ["intensity", "شِدّة/قوة"], ["tectonic plates", "صفائح تكتونية"], ["preparedness", "جاهزية/استعداد"], ["drills", "تدريبات/مناورات"]]}, "reading": ["Forecasting accuracy has improved over decades with better models.", "Evacuation routes and drills reduce casualties when intensity rises.", "Tracking storms across oceans supports early preparedness.", "Humidity and pressure trends guide meteorologists’ decisions.", "Waterproof kits and family plans increase resilience.", "Communities become prepared when schools and hospitals coordinate."]}};
+const UNIT_EXAM = [{"type": "V", "q": "Scientists have improved weather __________ using satellites and radar.", "opts": ["prediction", "evacuation", "construction", "migration"], "ans": "prediction"}, {"type": "V", "q": "Modern forecasting systems can predict storms with impressive __________.", "opts": ["accuracy", "humidity", "intensity", "distance"], "ans": "accuracy"}, {"type": "V", "q": "__________ study and predict weather patterns.", "opts": ["Meteorologists", "Geologists", "Biologists", "Astronomers"], "ans": "Meteorologists"}, {"type": "V", "q": "The amount of water vapor in the air is called __________.", "opts": ["humidity", "intensity", "accuracy", "pressure"], "ans": "humidity"}, {"type": "V", "q": "The strength of a storm is measured by its __________.", "opts": ["intensity", "accuracy", "humidity", "speed"], "ans": "intensity"}, {"type": "V", "q": "Earthquakes occur because __________ shift beneath the Earth’s surface.", "opts": ["tectonic plates", "mountains", "cloud layers", "icebergs"], "ans": "tectonic plates"}, {"type": "V", "q": "Emergency __________ means being ready for disasters before they happen.", "opts": ["preparedness", "prediction", "migration", "construction"], "ans": "preparedness"}, {"type": "V", "q": "Schools should practice evacuation __________ to prepare for emergencies.", "opts": ["drills", "warnings", "forecasts", "alerts"], "ans": "drills"}, {"type": "V", "q": "Important documents should be kept in a __________ container.", "opts": ["waterproof", "paper", "plastic", "glass"], "ans": "waterproof"}, {"type": "V", "q": "Governments often organize mass __________ before hurricanes strike.", "opts": ["evacuation", "prediction", "construction", "migration"], "ans": "evacuation"}, {"type": "V", "q": "Meteorologists use computer models to __________ storms.", "opts": ["track", "block", "ignore", "hide"], "ans": "track"}, {"type": "V", "q": "Practice activities for emergencies are called __________.", "opts": ["drills", "alerts", "warnings", "signals"], "ans": "drills"}, {"type": "V", "q": "The ability to forecast a hurricane’s path has improved greatly in recent __________.", "opts": ["decades", "hours", "minutes", "weeks"], "ans": "decades"}, {"type": "V", "q": "Earthquake prediction is harder because seismic activity occurs __________.", "opts": ["deep underground", "in the sky", "on the surface", "underwater"], "ans": "deep underground"}, {"type": "V", "q": "Lives could have been saved if cities were better __________.", "opts": ["prepared", "warned", "evacuated", "constructed"], "ans": "prepared"}, {"type": "G", "q": "This storm is __________ than the one last year.", "opts": ["stronger", "strong", "strongest", "more strong"], "ans": "stronger"}, {"type": "G", "q": "Yesterday was the __________ day of the summer; it reached 45°C.", "opts": ["hottest", "hot", "hotter", "most hot"], "ans": "hottest"}, {"type": "G", "q": "Hurricanes are usually __________ to predict than earthquakes.", "opts": ["easier", "easy", "easiest", "more easy"], "ans": "easier"}, {"type": "G", "q": "Mount Everest is the __________ mountain in the world.", "opts": ["highest", "higher", "high", "most high"], "ans": "highest"}, {"type": "G", "q": "This hotel is __________ than the one we stayed in before.", "opts": ["more comfortable", "comfortable", "most comfortable", "comfortabler"], "ans": "more comfortable"}, {"type": "G", "q": "The Nile is the __________ river in Africa.", "opts": ["longest", "longer", "long", "most long"], "ans": "longest"}, {"type": "G", "q": "Today is __________ than yesterday.", "opts": ["colder", "cold", "coldest", "more cold"], "ans": "colder"}, {"type": "G", "q": "This exercise is __________ than the last one.", "opts": ["easier", "easy", "easiest", "more easy"], "ans": "easier"}, {"type": "G", "q": "She is the __________ student in the class.", "opts": ["most intelligent", "intelligent", "more intelligent", "intelligenter"], "ans": "most intelligent"}, {"type": "G", "q": "Cairo is __________ than many other African cities.", "opts": ["busier", "busy", "busiest", "more busy"], "ans": "busier"}, {"type": "G", "q": "This phone is the __________ I’ve ever had.", "opts": ["best", "better", "good", "most good"], "ans": "best"}, {"type": "G", "q": "The 2011 earthquake was one of the __________ disasters in history.", "opts": ["most powerful", "powerful", "powerfuller", "powerfullest"], "ans": "most powerful"}, {"type": "G", "q": "He is __________ than his brother.", "opts": ["taller", "tall", "tallest", "more tall"], "ans": "taller"}, {"type": "G", "q": "This box is __________ than the other one.", "opts": ["heavier", "heavy", "heaviest", "more heavy"], "ans": "heavier"}, {"type": "G", "q": "Of the two answers, this one is __________.", "opts": ["more correct", "correct", "most correct", "correcter"], "ans": "more correct"}];
+
+const subTabs=document.getElementById('subTabs');
+const content=document.getElementById('content');
+const unitExamPanel=document.getElementById('unitExam');
+let currentLesson=1;
+
+[...document.querySelectorAll('.lesson-tab')].forEach(tab=>{
+  if(tab.id==='unitExamTab') return;
+  tab.addEventListener('click',()=>{
+    [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+    tab.classList.add('active');
+    unitExamPanel.classList.add('hidden');
+    content.classList.remove('hidden');
+    currentLesson = parseInt(tab.dataset.lesson,10);
+    buildLessonTabs();
+  });
+});
+
+const unitExamTab=document.getElementById('unitExamTab');
+unitExamTab.addEventListener('click',()=>{
+  [...document.querySelectorAll('.lesson-tab')].forEach(x=>x.classList.remove('active'));
+  unitExamTab.classList.add('active');
+  content.classList.add('hidden');
+  subTabs.innerHTML='';
+  unitExamPanel.classList.remove('hidden');
+  buildUnitExam();
+});
+
+function buildLessonTabs(){
+  const L = LESSONS[currentLesson];
+  subTabs.innerHTML='';
+  document.documentElement.style.setProperty('--lesson', L.color);
+  (L.tabs||[]).forEach((name,i)=>{
+    const st=el(`<div class='sub-tab ${i===0?'active':''}' data-tab='${name}'>${name}</div>`);
+    st.addEventListener('click',()=>{
+      [...document.querySelectorAll('.sub-tab')].forEach(x=>x.classList.remove('active'));
+      st.classList.add('active');
+      renderSubTab(name);
+    });
+    subTabs.appendChild(st);
+  });
+  renderSubTab((L.tabs||[])[0]);
+}
+
+function renderSubTab(name){
+  const L = LESSONS[currentLesson];
+  if(name.startsWith('1_')) renderVocabulary(L);
+  else if(name.startsWith('2_')) renderGames(L);
+  else if(name.startsWith('3_')) renderReading(L);
+  else if(name==='Grammar') renderGrammar(L);
+}
+
+buildLessonTabs();
+
+function renderVocabulary(L){
+  const cards = (L.vocab||[]).map(v=>`<div class='card'>
+    <div class='chip'>${L.title}</div>
+    <h4>${v.en}</h4>
+    <p><strong>Arabic:</strong> ${v.ar}</p>
+    <p><em>Example:</em> ${v.ex}</p>
+    <div class='row'>
+      <button onclick="speech.say('${v.en}', speech.rateWord)">Play word (UK)</button>
+      <button class='ghost' onclick="speech.say('${v.ex}', speech.rateSentence)">Play example (slow)</button>
+    </div>
+  </div>`).join('');
+  const test = `<div class='card'>
+    <h4>Spelling Test – تسميع مكتوب (عربي ➜ إنجليزي)</h4>
+    <p>اكتب الكلمة الإنجليزية الصحيحة حسب المعنى العربي.</p>
+    <div id='spellArea'></div>
+  </div>`;
+  content.innerHTML = `<div class='grid'>${cards}${test}</div>`;
+  startSpelling(L.vocab||[]);
+}
+
+function startSpelling(items){
+  const area=document.getElementById('spellArea'); let idx=0, score=0; items=shuffle(items);
+  function ask(){ const v=items[idx];
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${items.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      <input id='ans' class='input' placeholder='اكتب الكلمة بالإنجليزية' />
+      <div class='row' style='margin-top:8px'>
+        <button onclick='checkSpell()'>Submit</button>
+        <button class='ghost' onclick="speech.say('${v.en}', speech.rateWord)">Hear word</button>
+      </div>
+    </div>`;
+    window.checkSpell = ()=>{
+      const val=document.getElementById('ans').value.trim().toLowerCase();
+      if(val===(v.en||'').toLowerCase()){
+        score++; idx++; area.querySelector('.mcq').classList.add('success'); speech.say('Well done!',1);
+        setTimeout(()=>{ if(idx<items.length) ask(); else area.innerHTML=`<div class='success card'><h4>Great job!</h4><p>Your score: ${score}/${items.length}</p></div>`; }, 600);
+      }else{ speech.say('Try again',1); }
+    }
+  } ask();
+}
+
+function renderGames(L){
+  const pairs=(L.games&&L.games.pairs)||[]; const left=pairs.map(p=>p[0]); const right=pairs.map(p=>p[1]);
+  const html=`<div class='grid'>
+    <div class='card'>
+      <h4>Match the Cards – اسحب الكلمة إلى معناها</h4>
+      <div class='drag-wrap'>
+        <div><h4>English</h4><div class='drag-list' id='dragLeft'></div></div>
+        <div><h4>Arabic</h4><div class='drag-list' id='dragRight'></div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h4>Kahoot‑style: Choose the English from Arabic</h4>
+      <div id='kahoot'></div>
+    </div>
+  </div>`;
+  content.innerHTML=html; buildDragDrop(left,right); buildKahootWord(L);
+}
+
+function buildDragDrop(left,right){
+  const L1=shuffle(left), R1=shuffle(right);
+  const dl=document.getElementById('dragLeft');
+  const dr=document.getElementById('dragRight');
+  dl.innerHTML=L1.map(x=>`<div class='drag-item' draggable='true' data-word='${x}'>${x}</div>`).join('');
+  dr.innerHTML=R1.map(x=>`<div class='drag-item dropzone' data-mean='${x}'>${x}</div>`).join('');
+  const dItems=[...dl.querySelectorAll('.drag-item[draggable]')]; dItems.forEach(it=>{ it.addEventListener('dragstart',e=>{e.dataTransfer.setData('text',it.dataset.word)}); });
+  [...dr.querySelectorAll('.dropzone')].forEach(zone=>{
+    zone.addEventListener('dragover',e=>e.preventDefault());
+    zone.addEventListener('drop',e=>{
+      const w=e.dataTransfer.getData('text'); const mean=zone.dataset.mean;
+      const ok = Object.values(LESSONS).some(L=>L.games && L.games.pairs.some(p=>p[0]===w && p[1]===mean));
+      if(ok){ zone.classList.add('ok'); zone.innerHTML=`${mean} ✓ <span class='chip'>${w}</span>`; speech.say(w, speech.rateWord); }
+      else{ zone.classList.add('bad'); speech.say('Try again',1); }
+    });
+  });
+}
+
+function buildKahootWord(L){
+  const area=document.getElementById('kahoot'); let idx=0, score=0;
+  const bank = shuffle(L.vocab||[]).map(v=>({word:v.en, ar:v.ar}));
+  function ask(){ const item=bank[idx];
+    const distractors = shuffle((L.vocab||[]).filter(x=>x.en!==item.word)).slice(0,3).map(x=>x.en);
+    const options = shuffle([item.word, ...distractors]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${bank.length} · Score: ${score}</p>
+      <p><strong>Arabic meaning:</strong> ${item.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===item.word){ opt.classList.add('correct'); score++; speech.say('Excellent!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct: ' + item.word, 0.95);
+          const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===item.word); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<bank.length)?ask():area.innerHTML=`<div class='success card'><h4>Well done!</h4><p>Your score: ${score}/${bank.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderReading(L){
+  const s=L.reading||[];
+  content.innerHTML = `<div class='grid'>
+    ${s.map((t,i)=>`<div class='card'><h4>Sentence ${i+1}</h4><p>${t}</p><div class='row'><button class='ghost' onclick="speech.say('${t}', speech.rateSentence)">Play (UK, slow)</button></div></div>`).join('')}
+    <div class='card'><h4>Mini MCQ on Words</h4><div id='readMcq'></div></div>
+  </div>`;
+  buildReadMcq(L);
+}
+
+function buildReadMcq(L){
+  const area=document.getElementById('readMcq'); const sample = shuffle(L.vocab||[]).slice(4); let idx=0, score=0;
+  function ask(){ const v=sample[idx]; const options = shuffle([v.en, ...shuffle(L.vocab||[]).filter(x=>x.en!==v.en).slice(0,3).map(x=>x.en)]);
+    area.innerHTML=`<div class='mcq'>
+      <p class='score'>${idx+1}/${sample.length} · Score: ${score}</p>
+      <p><strong>المعنى:</strong> ${v.ar}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+    </div>`;
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===v.en){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct is ' + v.en,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===v.en); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; (idx<sample.length)?ask():area.innerHTML=`<div class='success card'><h4>Nice!</h4><p>Your score: ${score}/${sample.length}</p></div>` }, 800);
+      });
+    });
+  } ask();
+}
+
+function renderGrammar(L){
+  content.innerHTML = `<div class='card'>${L.grammar.explain}</div><div id='gramControls' class='row'><button class='ghost' id='retryGram'>Retry Grammar</button></div><div id='gramQs'></div>`;
+  const area=document.getElementById('gramQs');
+  function start(){ let idx=0, score=0; const qs=shuffle(L.grammar.qs);
+    function ask(){ const Q=qs[idx]; if(!Q){ area.innerHTML=`<div class='success card'><h4>Grammar Practice Done</h4><p>Your score: ${score}/${qs.length}</p></div>`; return }
+      const options=shuffle([...Q.opts]);
+      area.innerHTML=`<div class='mcq'>
+        <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+        <p>${Q.q}</p>
+        ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      </div>`;
+      [...area.querySelectorAll('.opt')].forEach(opt=>{
+        opt.addEventListener('click',()=>{
+          const val=opt.dataset.val;
+          if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Well done!',1); }
+          else{ opt.classList.add('wrong'); speech.say('Correct is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+          setTimeout(()=>{ idx++; ask(); }, 800);
+        });
+      });
+    }
+    ask();
+    const btn=document.getElementById('retryGram'); if(btn) btn.onclick=()=>start();
+  }
+  start();
+}
+
+function buildUnitExam(){
+  const area=unitExamPanel; let idx=0, score=0; const qs=shuffle(UNIT_EXAM);
+  function ask(){ if(idx>=qs.length){ area.innerHTML=`<div class='success card'><h4>Unit Exam Completed</h4><p>Your score: ${score}/${qs.length}</p><div class='row'><button class='ghost' id='retryExam'>Retry Exam</button></div></div>`; document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); }; return }
+    const Q=qs[idx]; const options=shuffle([...Q.opts]);
+    area.innerHTML = `<div class='mcq'>
+      <p class='score'>${idx+1}/${qs.length} · Score: ${score}</p>
+      <p>${Q.q}</p>
+      ${options.map(o=>`<div class='opt' data-val='${o}'>${o}</div>`).join('')}
+      <div class='row' style='margin-top:8px'><button class='ghost' id='retryExam'>Retry Exam</button></div>
+    </div>`;
+    document.getElementById('retryExam').onclick=()=>{ idx=0; score=0; const reshuffle=shuffle(UNIT_EXAM); qs.splice(0,qs.length,...reshuffle); ask(); };
+    [...area.querySelectorAll('.opt')].forEach(opt=>{
+      opt.addEventListener('click',()=>{
+        const val=opt.dataset.val;
+        if(val===Q.ans){ opt.classList.add('correct'); score++; speech.say('Great!',1); }
+        else{ opt.classList.add('wrong'); speech.say('Correct answer is ' + Q.ans,1); const c=[...area.querySelectorAll('.opt')].find(x=>x.dataset.val===Q.ans); c.classList.add('correct'); }
+        setTimeout(()=>{ idx++; ask(); }, 800);
+      });
+    });
+  }
+  ask();
+}
+
+content.classList.remove('hidden'); unitExamPanel.classList.add('hidden');
+</script>
+</body>
+</html>
