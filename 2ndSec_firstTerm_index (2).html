@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>2nd Sec – First Term (Offline)</title>
+<style>
+:root{--bg:#f7fbff;--text:#0b1533;--ring:#e2e8f0;--accent:#06b6d4;}
+
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
+header{background:linear-gradient(90deg,#2563eb,#f472b6);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;color:#ffffff}
+header .author{margin-left:auto;font-weight:700;color:#e0f2fe}
+.container{padding:14px}
+.center-wrap{display:grid;grid-template-columns:1fr;place-items:center;margin:10px 0}
+.ring{position:relative;width:min(680px,90vw);height:min(680px,90vw);border-radius:50%;border:12px solid var(--ring);background:#ffffff;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#2563eb;color:#ffffff;border-radius:50%;width:min(180px,36vw);height:min(180px,36vw);display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;box-shadow:0 8px 20px rgba(0,0,0,.12);}
+.center h2{margin:0;font-size:clamp(16px,4vw,22px)}
+.tab{position:absolute;transform:translate(-50%,-50%);padding:10px 14px;border-radius:12px;background:#fff;color:#0b1533;border:3px solid #cbd5e1;font-weight:800;box-shadow:0 6px 12px rgba(0,0,0,.10);cursor:pointer;white-space:nowrap}
+.tab:hover{transform:translate(-50%,-50%) scale(1.04)}
+.tab.active{color:#fff}
+.panel{margin-top:16px;background:#fff;border-radius:14px;border:2px solid #e2e8f0;padding:0;min-height:320px}
+iframe{width:100%;height:70vh;border:none;border-radius:12px}
+.note{background:#fff7e6;border:2px solid #ffe0a3;border-radius:12px;padding:12px;margin:12px}
+.footer{padding:14px;text-align:center;color:#567}
+@media (max-width:640px){ .ring{border-width:8px} .center{width:42vw;height:42vw} .tab{padding:8px 10px;font-size:14px} }
+
+</style>
+</head>
+<body>
+<header>
+  <h1>2nd Sec – First Term</h1>
+  <div class='author'>Created by <strong>Asmaa Mahmoud Elhagrasy</strong></div>
+</header>
+<div class='container'>
+  <div class='center-wrap'>
+    <div class='ring' id='ring'>
+      <div class='center'><h2>Asmaa Mahmoud Elhagrasy</h2></div>
+      <!-- Tabs injected by JS -->
+    </div>
+  </div>
+  <div class='panel'>
+    <iframe id='unitFrame' src='' title='Unit content'></iframe>
+  </div>
+  <div class='note'>
+    <p>💡 اضعي ملفات كل وحدة بجوار هذا الملف (مثل <code>Unit6_index_v2.1.html</code>) ليعمل أوفلاين على الهاتف. انقري أي تبويب حول اسمك لفتح المنصة الخاصة بالوحدة داخل الإطار.</p>
+  </div>
+</div>
+<div class='footer'>Offline · Color‑coded unit tabs around your name · Works great on mobile</div>
+<script>
+const units = [{"name": "Unit 1", "file": "Unit1_index.html", "color": "#2563eb"}, {"name": "Unit 2", "file": "Unit2_index.html", "color": "#800020"}, {"name": "Unit 3", "file": "Unit3_index.html", "color": "#7c3aed"}, {"name": "Unit 4", "file": "Unit4_index.html", "color": "#dc2626"}, {"name": "Unit 5", "file": "Unit5_index.html", "color": "#f472b6"}, {"name": "Unit 6", "file": "Unit6_index_v2.1.html", "color": "#a8123f"}];
+const ring = document.getElementById('ring');
+const frame = document.getElementById('unitFrame');
+const positions = [{"x": 50.0, "y": 8.0}, {"x": 86.37306695894642, "y": 29.0}, {"x": 86.37306695894642, "y": 71.0}, {"x": 50.0, "y": 92.0}, {"x": 13.626933041053583, "y": 71.00000000000001}, {"x": 13.626933041053562, "y": 29.000000000000025}];
+
+function setActiveTab(tab){
+  [...document.querySelectorAll('.tab')].forEach(x=>x.classList.remove('active'));
+  tab.classList.add('active');
+}
+
+function loadUnit(u, tab){
+  setActiveTab(tab);
+  tab.style.background = u.color; tab.style.borderColor = u.color;
+  fetch(u.file).then(r=>{
+    if(r.ok){ frame.src = u.file; }
+    else{ frame.srcdoc = `<div class='note'><h3>Unit not found</h3><p>Place <code>${u.file}</code> beside this file and reload.</p></div>`; }
+  }).catch(()=>{
+    frame.srcdoc = `<div class='note'><h3>Unit not found</h3><p>Place <code>${u.file}</code> beside this file and reload.</p></div>`;
+  });
+}
+
+units.forEach((u,i)=>{
+  const t = document.createElement('div');
+  t.className = 'tab' + (i===units.length-1?' active':'');
+  t.textContent = u.name;
+  const p = positions[i];
+  t.style.left = p.x + '%';
+  t.style.top  = p.y + '%';
+  t.style.borderColor = u.color;
+  t.addEventListener('click',()=>loadUnit(u,t));
+  ring.appendChild(t);
+});
+
+// Auto-load Unit 6 if present; else load Unit 1
+const defaultIndex = units.findIndex(u=>u.name==='Unit 6');
+const defaultTab = ring.querySelectorAll('.tab')[defaultIndex>=0?defaultIndex:0];
+loadUnit(units[defaultIndex>=0?defaultIndex:0], defaultTab);
+</script>
+</body>
+</html>
